@@ -1,0 +1,16 @@
+{
+    "ethernet": {
+        "interface": "eth0",
+        "local_ipv4": "1.1.1.1",
+        "remote_ip": "1.1.1.2",
+        "remote_port": "13400",
+        "role": "server"
+    },
+    "doip": {
+        "version": "2",
+        "inverse_version": "0xfd",
+        "tester_addr": "0x1234",
+        "ecu_addr": "0x5678",
+        "activation_code": "0"
+    }
+}
