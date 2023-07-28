@@ -1,10 +1,10 @@
 {
     "ethernet": {
         "interface": "eth0",
-        "local_ipv4": "1.1.1.1",
-        "remote_ip": "1.1.1.2",
+        "local_ipv4": "localhost",
+        "remote_ip": "localhost",
         "remote_port": "13400",
-        "role": "server"
+        "role": "client"
     },
     "doip": {
         "version": "2",

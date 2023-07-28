@@ -1,11 +1,13 @@
 use crate::transport::config::CONFIG;
 use crate::transport::doip;
 
+
+
 /*****************************************************************************************************************
- *  transport::soad::init function
- *  brief      Parse json file to get config parameters
+ *  transport::diag::init function
+ *  brief      Initialize doip module
  *  details    -
- *  \param[in]  config_filename:  path to config json file
+ *  \param[in]  -
  *  \param[out] -
  *  \precondition -
  *  \reentrant:  FALSE
@@ -16,7 +18,8 @@ pub fn init() {
     println!("ethernet: {:?}", &config.ethernet.local_ipv4);
     println!("doip: {:?}", &config.doip);
 
-    // initialize socket
+    // initialize
+    doip::init();
 }
 
 
@@ -24,16 +27,28 @@ pub fn init() {
  *  transport::diag::connect function
  *  brief      Connect to ECU server via tcp
  *  details    -
- *  \param[in]  ip:  String of ipv4/ipv6
- *  \param[in]  port:  port number
+ *  \param[in]  dest_addr:  String of ipv4/ipv6:port
+ *                          eg: 192.168.1.3:13400
  *  \param[out] -
  *  \precondition: role must be client
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn connect(ip: String, port: i32) -> Result<(), i32> {
+pub fn connect() -> Result<(), i32> {
     let config = CONFIG.read().unwrap();
-    doip::connect(ip, port);
+    // Extract the local IPv4 as a regular String or use an empty string if it's None.
+    let local_ipv4 = if let Some(ipv4) = &config.ethernet.local_ipv4 {
+        ipv4.to_string()
+    } else {
+        String::new()
+    };
+    // Concatenate the local IPv4 and port using the format! macro.
+    let server_addr = format!("{}:{}", local_ipv4, config.ethernet.remote_port);
+
+    if let Err(err) = doip::connect(server_addr) {
+        eprintln!("diag connect Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }
@@ -45,21 +60,24 @@ pub fn connect(ip: String, port: i32) -> Result<(), i32> {
  *  details    -
  *  \param[in]  -
  *  \param[out] -
- *  \precondition: tester role must be client
+ *  \precondition: -
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
 pub fn disconnect() -> Result<(), i32> {
     //TODO
-    let config = CONFIG.read().unwrap();
-    doip::disconnect();
+    //let config = CONFIG.read().unwrap();
+    if let Err(err) = doip::disconnect() {
+        eprintln!("diag disconnect Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }
 
 
 /*****************************************************************************************************************
- *  transport::diag::send_uds function
+ *  transport::diag::send_diag function
  *  brief      Function to send uds data to ECU
  *  details    -
  *  \param[in]  p_data:  refer to data array
@@ -68,8 +86,12 @@ pub fn disconnect() -> Result<(), i32> {
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
- pub fn send_uds(p_data: &[i8]) -> Result<(), i32> {
+pub fn send_diag(p_data: &[i8]) -> Result<(), i32> {
     //TODO
+    if let Err(err) = doip::send_doip(p_data) {
+        eprintln!("send_doip Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }

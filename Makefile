@@ -1,4 +1,4 @@
-prog :=xnixperms
+prog :=diag_tool
 
 debug ?=
 

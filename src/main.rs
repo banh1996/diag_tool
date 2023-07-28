@@ -3,7 +3,9 @@ extern crate log;
 extern crate serde_json;
 extern crate serde;
 
+use std::thread;
 use log::{debug};
+//use transport::diag;
 use std::env;
 use getopts::Options;
 //use log::{debug, info};
@@ -65,6 +67,10 @@ fn main() {
     /* init UDS layer */
     //TODO
     transport::diag::init();
+    if let Err(err) = transport::diag::connect() {
+        eprintln!("Error: {}", err);
+        std::process::exit(err);
+    }
 
     /* handle json sequence file */
     //TODO
@@ -84,7 +90,20 @@ fn main() {
     }
 
     //TODO: spawn thread to handl sequence, main thread to handle CLI
+    // Spawn a new thread to handle data reception and detach it.
+    thread::spawn(move || {
+        let p_data: &[i8] = &[-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+        if let Err(err) = transport::diag::send_diag(p_data) {
+            eprintln!("send_diag Error: {}", err);
+            return;
+        }
+
+        if let Err(err) = transport::diag::disconnect() {
+            eprintln!("diag disconnect Error: {}", err);
+            return;
+        }
+    });
 }
 
 fn print_usage(program: &str, opts: &Options) {

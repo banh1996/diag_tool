@@ -1,19 +1,44 @@
 use crate::transport::config::CONFIG;
 use crate::transport::soad;
 
+
+/*****************************************************************************************************************
+ *  transport::doip::init function
+ *  brief      Initialize doip module
+ *  details    -
+ *  \param[in]  -
+ *  \param[out] -
+ *  \precondition -
+ *  \reentrant:  FALSE
+ *  \return -
+ ****************************************************************************************************************/
+pub fn init() {
+    let config = CONFIG.read().unwrap();
+    println!("ethernet: {:?}", &config.ethernet.local_ipv4);
+    println!("doip: {:?}", &config.doip);
+
+    soad::init();
+
+    // initialize socket
+}
+
+
 /*****************************************************************************************************************
  *  transport::doip::connect function
  *  brief      Connect to ECU server via tcp
  *  details    -
- *  \param[in]  ip:  String of ipv4/ipv6
- *  \param[in]  port:  port number
+ *  \param[in]  dest_addr:  String of ipv4/ipv6:port
+ *                          eg: 192.168.1.3:13400
  *  \param[out] -
  *  \precondition: role must be client
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn connect(ip: String, port: i32) -> Result<(), i32> {
-    soad::connect(ip, port);
+pub fn connect(dest_addr: String) -> Result<(), i32> {
+    if let Err(err) = soad::connect(dest_addr) {
+        eprintln!("doip connect Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }
@@ -24,14 +49,16 @@ pub fn connect(ip: String, port: i32) -> Result<(), i32> {
  *  details    -
  *  \param[in]  -
  *  \param[out] -
- *  \precondition: tester role must be client
+ *  \precondition: -
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
 pub fn disconnect() -> Result<(), i32> {
-    //TODO
-    let config = CONFIG.read().unwrap();
-    soad::disconnect();
+    //let config = CONFIG.read().unwrap();
+    if let Err(err) = soad::disconnect() {
+        eprintln!("doip disconnect Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }
@@ -48,7 +75,11 @@ pub fn disconnect() -> Result<(), i32> {
  ****************************************************************************************************************/
  pub fn send_doip(p_data: &[i8]) -> Result<(), i32> {
     //TODO
-    let config = CONFIG.read().unwrap();
+    //let config = CONFIG.read().unwrap();
+    if let Err(err) = soad::send_tcp(p_data) {
+        eprintln!("send_doip Error: {}", err);
+        return Err(err);
+    }
 
     Ok(())
 }

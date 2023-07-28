@@ -20,14 +20,14 @@
             "timeout": "500ms",
             "fail": "fail_handler"
         },
-        "send_uds": {
+        "send_diag": {
             "action": [	"1001", "22f186"],
             "expect": ["7fxxx", "62f186xxx"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
         "swdl": "/path/to/swdl.json",
-        "send_uds": {
+        "send_diag": {
             "action": [	"1101" ],
             "expect": [ "7fxxx" ],
             "timeout": "1s",
@@ -41,7 +41,7 @@
 	    }
     },
     "fail_handler": {
-        "send_uds": {
+        "send_diag": {
             "action": [	"1101" ],
             "expect": [ "7fxxx" ],
             "timeout": "5m"
