@@ -21,9 +21,10 @@ cargo build
 <summary><s>Parse json configuration file</s></summary>
 <summary>Parse json sequence file</summary>
 <summary>full-sequence for SWDL</summary>
-<summary>Execute CLI cmd</summary>
+<summary>Execute CLI cmd from terminal (send diag cmd)</summary>
 <summary>Support IPv6</summary>
 <summary><s>Support Debug-log</s></summary>
+<summary><s>Support option argement</s></summary>
 <summary>Full-compliance for ISO13400</summary>
 <summary>Full-compliance for ISO14229-3</summary>
 <summary>Support TLS for DoIp layer</summary>

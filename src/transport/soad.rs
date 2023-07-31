@@ -1,62 +1,23 @@
 use crate::transport::config::CONFIG;
-use log::{debug, info};
+use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
+// use std::thread;
 use std::net::{TcpListener, TcpStream, Shutdown};
 use std::io::{Read, Write};
-
-lazy_static::lazy_static! {
-    static ref G_IS_INIT_SOCKET: AtomicBool = AtomicBool::new(false);
-}
-
-fn handle_stream_data(mut stream: TcpStream) {
-    let mut data = [0 as u8; 50]; // using 50 byte buffer
-    while match stream.read(&mut data) {
-        Ok(size) => {
-            // echo everything!
-            stream.write(&data[0..size]).unwrap();
-            true
-        },
-        Err(_) => {
-            println!("An error occurred, terminating connection with {}", stream.peer_addr().unwrap());
-            stream.shutdown(Shutdown::Both).unwrap();
-            false
-        }
-    } {}
-}
-
+use std::io;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::io::{Error, ErrorKind};
 
 /*****************************************************************************************************************
- *  transport::soad::listen_for_connections function
- *  brief      Function to listen new tcp connection
- *  details    -
- *  \param[in]  -
- *  \param[out] -
- *  \precondition only valid in case tester role is server
- *  \reentrant:  FALSE
- *  \return -
+ *  Define all gloval macro & variable here
  ****************************************************************************************************************/
-fn listen_for_connections(listener: TcpListener) {
-    // accept connections and process them, spawning a new thread for each one
-    for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                println!("New connection: {}", stream.peer_addr().unwrap());
-                thread::spawn(move|| {
-                    // connection succeeded
-                    handle_stream_data(stream);
-                });
-            }
-            Err(e) => {
-                println!("Error: {}", e);
-                /* connection failed */
-            }
-        }
-    }
-    // close the socket server
-    drop(listener);
-    debug!("Initilizing socket!");
+lazy_static::lazy_static! {
+    static ref G_IS_INIT_SOCKET: AtomicBool = AtomicBool::new(false);
+    static ref RECEIVE_TIMEOUT: usize = 10; //default
 }
+const BUFFER_SIZE: usize = 1024; //default
+/* end define */
 
 
 /*****************************************************************************************************************
@@ -77,54 +38,65 @@ pub fn init() {
     // Check if tester role is client, then exit without doing any
     if &config.ethernet.role == "client" {
         if G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
-            info!("Already Initilized socket!");
+            debug!("Already Initilized socket!");
         }
         else {
-            debug!("Role is client, Ignore initilize socket!");
+            debug!("Role is client, Ignore initilize server socket!");
         }
         return; //role is client, nothing to do
     }
-}
+} /* init */
 
 
 /*****************************************************************************************************************
  *  transport::soad::connect function
- *  brief      Function to establish connection with ECU via tcp
- *  details    If role is client, connect to ECU-server. Otherwise(role is server), bind ip and start to listen
- *             In case role is server, function will return accepted socket object.
- *             In case role is client, function will return connected socket object.
+ *  brief       Function to establish connection with ECU via tcp
+ *  details     If role is client, connect to ECU-server. Otherwise(role is server), bind ip and start to listen
+ *              In case role is server, function will return accepted socket object.
+ *              In case role is client, function will return connected socket object.
  *  \param[in]  dest_addr:  String of ipv4/ipv6:port
  *                          eg: 192.168.1.3:13400
  *  \param[out] -
  *  \precondition: -
- *  \reentrant:  FALSE
- *  \return -
+ *  \reentrant: FALSE
+ *  \return:    TcpStream object after connected
+ *              Error if any
  ****************************************************************************************************************/
-pub fn connect(dest_addr: String) -> Result<(), i32> {
+pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
     let config = CONFIG.read().unwrap();
 
     // Check if tester role is client, then call connect cmd to server. or else, start to listen socket
     if &config.ethernet.role == "client" {
-        if G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
-            debug!("Connecting to server!");
-            let stream = TcpStream::connect(dest_addr).expect("Failed to connect to server");
+        if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "socket is not initilized yet!",
+            ));
+        }
 
-            // Spawn a new thread to handle data reception and detach it.
-            thread::spawn(move || {
-                handle_stream_data(stream);
-            });
-        }
-        else {
-            debug!("Not initilized socket yet!");
-            return Err(-1);
-        }
+        debug!("Connecting to server!");
+        let stream = TcpStream::connect(dest_addr)?;
+
+        // Create an Arc wrapping the TcpStream to share ownership between threads
+        // I keep this in case we need to add more feature here
+        let shared_stream = Arc::new(Mutex::new(stream));
+
+        // Clone the Arc to be moved into the sender thread
+        //let receiver_stream = Arc::clone(&shared_stream);
+
+        // Spawn a new thread to handle data reception and detach it.
+        // thread::spawn(move || {
+        //     // Access the TcpStream through the Mutex in the closure
+        //     //let mut stream = clone_stream.lock().unwrap();
+        //     handle_stream_data(&receiver_stream, &receiver_cvar);
+        // });
+
+        // Return the original stream outside the closure
+        Ok(shared_stream) //TODO: return cvar also
     }
     else if &config.ethernet.role == "server" {
         // Listen tcp stream in case tester role is server
-        if G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
-            debug!("Socket was initialized. Skipping...");
-        }
-        else {
+        if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
             // Extract the local IPv4 as a regular String or use an empty string if it's None.
             let local_ipv4 = if let Some(ipv4) = &config.ethernet.local_ipv4 {
                 ipv4.to_string()
@@ -137,58 +109,172 @@ pub fn connect(dest_addr: String) -> Result<(), i32> {
             let listener = TcpListener::bind(server_addr).unwrap();
             debug!("Server listening on port {:?}", &config.ethernet.remote_port);
 
-            // Spawn a new thread for listening to incoming connections.
-            thread::spawn(move || {
-                // Call the listen_for_connections function to handle incoming connections.
-                listen_for_connections(listener);
-            });
+            // accept connections and process them, spawning a new thread for each one if needed
+            let stream = listener.incoming().next().unwrap()?;
+            debug!("New connection coming: {}", stream.peer_addr().unwrap());
+
+            // Create an Arc wrapping the TcpStream to share ownership between threads
+            // I keep this in case we need to add more feature here
+            let shared_stream = Arc::new(Mutex::new(stream));
+
+            // Clone the Arc to be moved into the sender thread
+            //let receiver_stream = Arc::clone(&shared_stream);
+
+            // Spawn a new thread to handle data reception and detach it.
+            // thread::spawn(move || {
+            //     // Access the TcpStream through the Mutex in the closure
+            //     //let mut stream = clone_stream.lock().unwrap();
+            //     handle_stream_data(&receiver_stream);
+            // });
+
+            // close the socket server if needed
+            drop(listener);
+            debug!("Connected socket successfully!");
+
+            Ok(shared_stream)
+        } else {
+            debug!("Socket was already initialized. Skipping...");
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Socket was already initialized",
+            ))
         }
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            "Invalid tester role",
+        ))
     }
-    Ok(())
 }
+/* connect */
 
 
 /*****************************************************************************************************************
  *  transport::soad::disconnect function
- *  brief      Disonnect to ECU server via tcp
- *  details    -
- *  \param[in]  -
- *  \param[out] -
+ *  brief        Disonnect to ECU server via tcp
+ *  details      -
+ *  \param[in]   stream: TcpStream that used with mutex to prevent race condition when sending/reading data
+ *  \param[out]  -
  *  \precondition: -
  *  \reentrant:  FALSE
- *  \return -
+ *  \return      Error if any
  ****************************************************************************************************************/
-pub fn disconnect() -> Result<(), i32> {
-    //TODO
-    //let config = CONFIG.read().unwrap();
+pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
+    // Lock the stream for access
+    let stream = stream.lock().unwrap();
+
+    // Shutdown the TcpStream
+    if let Err(err) = stream.shutdown(Shutdown::Both) {
+        // Handle the error. You can print an error message or take other actions as needed.
+        eprintln!("Failed to shutdown TcpStream: {}", err);
+        return Err(err); // Propagate the error back to the caller.
+    }
 
     Ok(())
 }
+/* disconnect */
 
 
 /*****************************************************************************************************************
  *  transport::soad::send_tcp function
  *  brief      Function to send tcp data to ECU
  *  details    -
- *  \param[in]  p_data:  refer to data array
+ *  \param[in]  stream: tcp object
+ *              cvar: condition variable
+ *              p_data: refer to data array
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
- pub fn send_tcp(p_data: &[i8]) -> Result<(), i32> {
+pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), io::Error> {
     //TODO
     //let config = CONFIG.read().unwrap();
+
+    // Check if the socket is connected before sending data
+    if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+        eprint!("Not initialized yet!");
+        return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
+    }
+
     // Print the data in string format
     let data_as_string: String = p_data.iter().map(|&x| x as u8 as char).collect();
-    println!("Data as string: {}", data_as_string);
+    debug!("Data as string: {}", data_as_string);
 
     // Print the data in hexadecimal format
     let data_as_hex: String = p_data
         .iter()
         .map(|&x| format!("{:02X}", x as u8))
         .collect();
-    println!("Data as hex: {}", data_as_hex);
+    debug!("Data as hex: {}", data_as_hex);
+
+    let mut stream_lock = stream.lock().unwrap(); //lock mutex to send tcp data
+
+    // Check if the socket is still open before sending data
+    if let Err(e) = stream_lock.write_all(&p_data) {
+        if e.kind() == io::ErrorKind::BrokenPipe {
+            return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
+        } else {
+            return Err(e);
+        }
+    }
 
     Ok(())
 }
+/* send_tcp */
+
+
+/*****************************************************************************************************************
+ *  transport::soad::read_tcp function
+ *  brief      Function to send tcp data to ECU
+ *  details    -
+ *  \param[in]  stream: tcp object
+ *              cvar: condition variable
+ *  \param[out] p_data: refer to output data array
+ *  \precondition: Establish TCP connection successfully
+ *  \reentrant:  FALSE
+ *  \return -
+ ****************************************************************************************************************/
+pub fn receive_tcp(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Vec<u8>, io::Error> {
+    //TODO
+    //let config = CONFIG.read().unwrap();
+
+    // Check if the socket is connected before sending data
+    if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+        eprint!("Not initialized yet!");
+        return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
+    }
+
+    //lock mutex to send tcp data
+    let mut stream_lock = stream.lock().unwrap();
+
+    // Set a read timeout
+    if let Err(e) = stream_lock.set_read_timeout(Some(Duration::from_secs(timeout))) {
+        if e.kind() == ErrorKind::WouldBlock {
+            // Timeout: Cannot set read timeout on non-blocking socket
+            return Err(Error::new(ErrorKind::TimedOut, "Timeout: Cannot set read timeout on non-blocking socket"));
+        } else {
+            return Err(e);
+        }
+    }
+
+    // Create a buffer to store the received data
+    let mut buffer = [0u8; BUFFER_SIZE];
+    let mut received_data = Vec::new();
+
+    // Attempt to read from the socket
+    match stream_lock.read(&mut buffer) {
+        Ok(0) => Err(Error::new(ErrorKind::ConnectionAborted, "Connection closed by peer")),
+        Ok(n) => {
+            // Data received successfully
+            received_data.extend_from_slice(&buffer[..n]);
+            Ok(received_data)
+        }
+        Err(ref e) if e.kind() == ErrorKind::WouldBlock => {
+            // Timeout: No data received within the specified timeout
+            return Err(Error::new(ErrorKind::TimedOut, "Timeout: No data received within the specified timeout"));
+        }
+        Err(e) => return Err(e),
+    }
+}
+/* read_tcp */

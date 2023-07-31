@@ -4,7 +4,7 @@ extern crate serde_json;
 extern crate serde;
 
 use std::thread;
-use log::{debug};
+use log::debug;
 //use transport::diag;
 use std::env;
 use getopts::Options;
@@ -64,12 +64,14 @@ fn main() {
         return;
     }
 
-    /* init UDS layer */
+    /* init transport module */
     //TODO
-    transport::diag::init();
-    if let Err(err) = transport::diag::connect() {
-        eprintln!("Error: {}", err);
-        std::process::exit(err);
+    let mut diag_obj = transport::diag::create_diag();
+
+    // Call connect method
+    match diag_obj.connect() {
+        Ok(()) => debug!("Connected successfully!"),
+        Err(err) => eprintln!("Failed to connect: {}", err),
     }
 
     /* handle json sequence file */
@@ -82,7 +84,7 @@ fn main() {
                 return;
             }
         };
-        debug!("File contents: {}", sequence_contents);
+        debug!("TODO: parse File contents: {}", sequence_contents);
     } else {
         eprintln!("Error: --sequence option is required");
         print_usage(&args[0], &opts);
@@ -92,18 +94,34 @@ fn main() {
     //TODO: spawn thread to handl sequence, main thread to handle CLI
     // Spawn a new thread to handle data reception and detach it.
     thread::spawn(move || {
-        let p_data: &[i8] = &[-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-        if let Err(err) = transport::diag::send_diag(p_data) {
-            eprintln!("send_diag Error: {}", err);
-            return;
+        let p_data: Vec<u8> = vec![b'a', b'b', b'c', 2, 3, 4, 5, 6, 7, 8, b'z'];
+        debug!("Sending data");
+        match diag_obj.send_diag(p_data) {
+            Ok(()) => debug!("Sent data successfully!"),
+            Err(err) => eprintln!("Failed to connect: {}", err),
         }
 
-        if let Err(err) = transport::diag::disconnect() {
+        match diag_obj.receive_diag( 10) {
+            Ok(data) => {
+                // Process the received data
+                debug!("Received {} bytes: {:?}", data.len(), data);
+            }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+            }
+        }
+
+        if let Err(err) = diag_obj.disconnect() {
             eprintln!("diag disconnect Error: {}", err);
             return;
         }
+        else {
+            debug!("Disconnected!");
+        }
     });
+
+    //TODO: impliment CLI
+    loop {}
 }
 
 fn print_usage(program: &str, opts: &Options) {
