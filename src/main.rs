@@ -57,7 +57,16 @@ fn main() {
     /* handle json config file */
     if let Some(config_filename) = matches.opt_str("config") {
         // Read the JSON file into a string
-        parse_config::parse(config_filename);
+        //if let Ok() = parse_config::parse(config_filename)
+        match parse_config::parse(config_filename) {
+            Ok(()) => {
+                debug!("Parse config json done!");
+            },
+            Err(e) => {
+                eprintln!("parse config file error {}!", e);
+                return;
+            }
+        }
     } else {
         eprintln!("Error: --config option is required");
         print_usage(&args[0], &opts);

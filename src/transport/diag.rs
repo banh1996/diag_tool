@@ -1,6 +1,6 @@
 use crate::transport::config::CONFIG;
 use crate::transport::doip;
-use std::io;
+use std::io::{self, Error, ErrorKind};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use log::debug;
@@ -64,14 +64,15 @@ pub fn init() {
 
 /*****************************************************************************************************************
  *  transport::diag::connect function
- *  brief      Connect to ECU server via tcp
- *  details    -
- *  \param[in]  dest_addr:  String of ipv4/ipv6:port
- *                          eg: 192.168.1.3:13400
+ *  brief       Function to establish connection with ECU via tcp
+ *  details     If role is client, connect to ECU-server. Otherwise(role is server), bind ip and start to listen
+ *              In case role is server, function will return accepted socket object.
+ *              In case role is client, function will return connected socket object.
+ *  \param[in]  -
  *  \param[out] -
- *  \precondition: role must be client
- *  \reentrant:  FALSE
- *  \return -
+ *  \precondition: -
+ *  \reentrant: FALSE
+ *  \return:    Error code if any
  ****************************************************************************************************************/
 pub fn connect(&mut self) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
@@ -101,13 +102,13 @@ pub fn connect(&mut self) -> Result<(), io::Error> {
 
 /*****************************************************************************************************************
  *  transport::diag::disconnect function
- *  brief      Disonnect to ECU server via tcp
- *  details    -
- *  \param[in]  -
- *  \param[out] -
+ *  brief        Disonnect to ECU server via tcp
+ *  details      -
+ *  \param[in]   -
+ *  \param[out]  -
  *  \precondition: -
  *  \reentrant:  FALSE
- *  \return -
+ *  \return      Error code if any
  ****************************************************************************************************************/
 pub fn disconnect(&mut self) -> Result<(), io::Error> {
     //TODO
@@ -130,20 +131,20 @@ pub fn disconnect(&mut self) -> Result<(), io::Error> {
 
 /*****************************************************************************************************************
  *  transport::diag::send_diag function
- *  brief      Function to send uds data to ECU
+ *  brief      Function to send diag data to ECU
  *  details    -
- *  \param[in]  p_data:  refer to data array
+ *  \param[in]  p_data: refer to data array
  *  \param[out] -
- *  \precondition: Activate doip successfully
+ *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
- *  \return -
+ *  \return     Error code if any
  ****************************************************************************************************************/
 pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
     //TODO add diag header
     match &mut self.stream {
         Some(stream) => {
             //drop tcp stream
-            if let Err(e) = doip::send_doip(stream, p_data) {
+            if let Err(e) = doip::send_doip_diag(stream, p_data) {
                 return Err(e);
             }
             Ok(())
@@ -157,14 +158,15 @@ pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
 
 
 /*****************************************************************************************************************
- *  transport::doip::receive_tcp function
- *  brief      Function to receive doip data to ECU
+ *  transport::diag::receive_diag function
+ *  brief      Function to receive diag data to ECU
  *  details    -
- *  \param[in]  p_data:  refer to data array
+ *  \param[in]  timeout: timeout to wait for new diag data. If there's no data, return error
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
- *  \return -
+ *  \return     Vec contains received data
+ *              Error code if any
  ****************************************************************************************************************/
 pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
     //TODO: add diag header
@@ -173,10 +175,13 @@ pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
         Some(stream) => {
             //drop tcp stream
             match doip::receive_doip(stream, timeout) {
-                Ok(data) => {
+                Ok(Some(data)) => {
                     // Process the received data
                     debug!("Received {} bytes: {:?}", data.len(), data);
                     Ok(data)
+                },
+                Ok(None) => {
+                    Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);

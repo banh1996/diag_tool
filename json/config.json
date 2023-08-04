@@ -7,7 +7,7 @@
         "role": "client"
     },
     "doip": {
-        "version": "2",
+        "version": "0x2",
         "inverse_version": "0xfd",
         "tester_addr": "0x1234",
         "ecu_addr": "0x5678",

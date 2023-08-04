@@ -19,12 +19,13 @@ pub struct Ethernet {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Doip {
-    pub version: String,
-    pub inverse_version: String,
-    pub tester_addr: String,
-    pub ecu_addr: String,
-    pub activation_code: String,
+    pub version: u8,
+    pub inverse_version: u8,
+    pub tester_addr: u16,
+    pub ecu_addr: u16,
+    pub activation_code: u8,
 }
+
 
 lazy_static::lazy_static! {
     pub static ref CONFIG: RwLock<Config> = RwLock::new(Config {
@@ -38,11 +39,12 @@ lazy_static::lazy_static! {
             role: String::new(),
         },
         doip: Doip {
-            version: String::new(),
-            inverse_version: String::new(),
-            tester_addr: String::new(),
-            ecu_addr: String::new(),
-            activation_code: String::new(),
+            //version: String::new(),
+            version: 0,
+            inverse_version: 0,
+            tester_addr: 0,
+            ecu_addr: 0,
+            activation_code: 0,
         },
     });
 }

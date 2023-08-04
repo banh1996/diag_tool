@@ -55,12 +55,12 @@ pub fn init() {
  *              In case role is server, function will return accepted socket object.
  *              In case role is client, function will return connected socket object.
  *  \param[in]  dest_addr:  String of ipv4/ipv6:port
- *                          eg: 192.168.1.3:13400
+ *                          eg: "192.168.1.3:13400"
  *  \param[out] -
  *  \precondition: -
  *  \reentrant: FALSE
- *  \return:    TcpStream object after connected
- *              Error if any
+ *  \return:    TcpStream object after establishedconnection
+ *              Error code if any
  ****************************************************************************************************************/
 pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
     let config = CONFIG.read().unwrap();
@@ -92,7 +92,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
         // });
 
         // Return the original stream outside the closure
-        Ok(shared_stream) //TODO: return cvar also
+        Ok(shared_stream)
     }
     else if &config.ethernet.role == "server" {
         // Listen tcp stream in case tester role is server
@@ -157,7 +157,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
  *  \param[out]  -
  *  \precondition: -
  *  \reentrant:  FALSE
- *  \return      Error if any
+ *  \return      Error code if any
  ****************************************************************************************************************/
 pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
     // Lock the stream for access
@@ -179,18 +179,14 @@ pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
  *  transport::soad::send_tcp function
  *  brief      Function to send tcp data to ECU
  *  details    -
- *  \param[in]  stream: tcp object
- *              cvar: condition variable
+ *  \param[in]  stream: TcpStream that used with mutex to prevent race condition when sending/reading data
  *              p_data: refer to data array
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
- *  \return -
+ *  \return     Error code if any
  ****************************************************************************************************************/
 pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), io::Error> {
-    //TODO
-    //let config = CONFIG.read().unwrap();
-
     // Check if the socket is connected before sending data
     if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
         eprint!("Not initialized yet!");
@@ -225,20 +221,18 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
 
 
 /*****************************************************************************************************************
- *  transport::soad::read_tcp function
- *  brief      Function to send tcp data to ECU
+ *  transport::soad::receive_tcp function
+ *  brief      Function to receive tcp data to ECU
  *  details    -
- *  \param[in]  stream: tcp object
- *              cvar: condition variable
- *  \param[out] p_data: refer to output data array
+ *  \param[in]  stream: TcpStream that used with mutex to prevent race condition when sending/reading data
+ *              timeout: timeout to wait for new doip data. If there's no data, return error
+ *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
- *  \return -
+ *  \return     Vec contains received data
+ *              Error code if any
  ****************************************************************************************************************/
 pub fn receive_tcp(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Vec<u8>, io::Error> {
-    //TODO
-    //let config = CONFIG.read().unwrap();
-
     // Check if the socket is connected before sending data
     if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
         eprint!("Not initialized yet!");
