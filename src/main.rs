@@ -5,13 +5,16 @@ extern crate serde;
 
 use std::thread;
 use log::debug;
-//use transport::diag;
 use std::env;
 use getopts::Options;
 //use log::{debug, info};
 
 mod utils {
     pub mod parse_config;
+}
+
+mod executor {
+    pub mod parse_sequence;
 }
 
 mod transport {
@@ -22,7 +25,8 @@ mod transport {
 }
 
 use utils::parse_config; // Import the parse config module
-use std::fs;
+use executor::parse_sequence; // Import the parse sequence module
+
 
 fn main() {
     // Define the available command-line options
@@ -74,26 +78,31 @@ fn main() {
     }
 
     /* init transport module */
-    //TODO
+    //TODO: pass Diag object to executor
     let mut diag_obj = transport::diag::create_diag();
 
-    // Call connect method
+    // Call connect method, test
     match diag_obj.connect() {
         Ok(()) => debug!("Connected successfully!"),
         Err(err) => eprintln!("Failed to connect: {}", err),
     }
 
+    // Call activate method, test
+    match diag_obj.send_doip_routing_activation() {
+        Ok(()) => debug!("send_doip_routing_activation successfully!"),
+        Err(err) => eprintln!("Failed to send_doip_routing_activation: {}", err),
+    }
+
     /* handle json sequence file */
     //TODO
     if let Some(sequence_filename) = matches.opt_str("sequence") {
-        let sequence_contents = match fs::read_to_string(&sequence_filename) {
-            Ok(contents) => contents,
+        match parse_sequence::parse(sequence_filename) {
+            Ok(()) => {}
             Err(err) => {
-                eprintln!("Error reading file {}: {}", sequence_filename, err);
+                eprintln!("Error reading sequence file {}", err);
                 return;
             }
         };
-        debug!("TODO: parse File contents: {}", sequence_contents);
     } else {
         eprintln!("Error: --sequence option is required");
         print_usage(&args[0], &opts);

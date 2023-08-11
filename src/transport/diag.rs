@@ -12,6 +12,7 @@ pub trait Transport {
     fn disconnect(&mut self) -> Result<(), io::Error>;
     fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error>;
     fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error>;
+    fn send_doip_routing_activation(&mut self) -> Result<(), io::Error>;
 }
 
 pub struct Diag {
@@ -38,6 +39,10 @@ impl Transport for Diag {
 
     fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
         self.receive_diag(timeout)
+    }
+
+    fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
+        self.send_doip_routing_activation()
     }
 }
 
@@ -181,6 +186,32 @@ pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
                     Ok(data)
                 },
                 Ok(None) => {
+                    Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    Err(e)
+                }
+            }
+        }
+        None => Err(io::Error::new(
+            io::ErrorKind::NotConnected,
+            "Not connected to any server",
+        )),
+    }
+}
+
+
+
+/********************************************************************************************************************
+ * Here to wrap doip functions to Diag object interface
+ ********************************************************************************************************************/
+pub fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
+    match &mut self.stream {
+        Some(stream) => {
+            //drop tcp stream
+            match doip::send_doip_routing_activation(stream) {
+                Ok(()) => {
                     Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
                 }
                 Err(e) => {

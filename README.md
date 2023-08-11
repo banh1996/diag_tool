@@ -23,7 +23,7 @@ cargo build
 <summary>Parse json sequence file</summary>
 <summary>Check json sequence parameters before execute</summary>
 <summary>full-sequence for SWDL</summary>
-<summary>Support SWDL for hex, S37, vf format</summary>
+<summary>Support SWDL for hex, S37, vbf format</summary>
 <summary>Lock json folder by password to protect sensitive data (OEM keys)</summary>
 <summary>Execute CLI cmd from terminal (send diag cmd)</summary>
 <summary>Support IPv6</summary>
