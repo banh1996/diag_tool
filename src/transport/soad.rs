@@ -1,7 +1,6 @@
 use crate::transport::config::CONFIG;
 use log::debug;
 use std::sync::atomic::{AtomicBool, Ordering};
-// use std::thread;
 use std::net::{TcpListener, TcpStream, Shutdown};
 use std::io::{Read, Write};
 use std::io;
@@ -162,6 +161,9 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
 pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
     // Lock the stream for access
     let stream = stream.lock().unwrap();
+
+    // Reset G_IS_INIT_SOCKET to false, then reconnect allow
+    G_IS_INIT_SOCKET.store(false, Ordering::Relaxed);
 
     // Shutdown the TcpStream
     if let Err(err) = stream.shutdown(Shutdown::Both) {

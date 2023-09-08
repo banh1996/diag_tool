@@ -1,10 +1,19 @@
-//TODO: full compliance for ISO13400
+//TODO: full compliance for ISO13400-1
 
 use crate::transport::config::CONFIG;
 use crate::transport::soad;
 use std::io::{self, Error, ErrorKind};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/*****************************************************************************************************************
+ *  Define all gloval macro & variable here
+ ****************************************************************************************************************/
+lazy_static::lazy_static! {
+    static ref G_IS_ROUTING_SUCCESS: AtomicBool = AtomicBool::new(false); // Initial value
+}
+
 
 /* define all global struct and variable here */
 #[derive(Debug)]
@@ -74,7 +83,7 @@ pub fn init() {
  pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
     match soad::connect(dest_addr) {
         Ok(stream) => {
-            // Wrap the stream and cvar in Arc and return both in a tuple
+            G_IS_ROUTING_SUCCESS.store(false, Ordering::Relaxed);
             Ok(stream)
         }
         Err(e) => {
@@ -97,6 +106,7 @@ pub fn init() {
  *  \return      Error code if any
  ****************************************************************************************************************/
 pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
+    G_IS_ROUTING_SUCCESS.store(false, Ordering::Relaxed);
     if let Err(err) = soad::disconnect(stream) {
         eprintln!("doip disconnect Error: {}", err);
         return Err(err);
@@ -136,6 +146,7 @@ pub fn send_doip(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>, type_field: u1
     // Check type field to append address
     match type_field {
         0x8001 => { //diagnostic message request
+            //Add tester&ECU addr to doip payload
             doip_header_bytes.extend_from_slice(&config.doip.tester_addr.to_be_bytes());
             doip_header_bytes.extend_from_slice(&config.doip.ecu_addr.to_be_bytes());
         },
@@ -145,7 +156,7 @@ pub fn send_doip(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>, type_field: u1
         _ => {
             return Err(Error::new(ErrorKind::InvalidData, "Invalid type field at sending doip layer"));
         }
-    } 
+    }
 
     // Combine the DoIP header with the original p_data
     let mut combined_data = Vec::new();
@@ -173,6 +184,10 @@ pub fn send_doip(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>, type_field: u1
  *  \return     Error code if any
  ****************************************************************************************************************/
 pub fn send_doip_diag(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), io::Error> {
+    if !G_IS_ROUTING_SUCCESS.load(Ordering::Relaxed) {
+        return Err(Error::new(ErrorKind::WouldBlock, "Do activation routing before send diag messages!"));
+    }
+
     if let Err(e) = send_doip(stream, p_data, 0x8100) {
         eprintln!("send_doip_diag Error: {}", e);
         return Err(e);
@@ -283,6 +298,7 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                         continue;
                     },
                     0x0006 => { // Routing activation successful
+                        G_IS_ROUTING_SUCCESS.store(true, Ordering::Relaxed);
                         return Ok(None);
                     },
                     _ => {

@@ -15,6 +15,8 @@ mod utils {
 
 mod executor {
     pub mod parse_sequence;
+    pub mod parameters;
+    pub mod executor;
 }
 
 mod transport {
@@ -81,17 +83,17 @@ fn main() {
     //TODO: pass Diag object to executor
     let mut diag_obj = transport::diag::create_diag();
 
-    // Call connect method, test
-    match diag_obj.connect() {
-        Ok(()) => debug!("Connected successfully!"),
-        Err(err) => eprintln!("Failed to connect: {}", err),
-    }
+    // // Call connect method, test
+    // match diag_obj.connect() {
+    //     Ok(()) => debug!("Connected successfully!"),
+    //     Err(err) => eprintln!("Failed to connect: {}", err),
+    // }
 
-    // Call activate method, test
-    match diag_obj.send_doip_routing_activation() {
-        Ok(()) => debug!("send_doip_routing_activation successfully!"),
-        Err(err) => eprintln!("Failed to send_doip_routing_activation: {}", err),
-    }
+    // // Call activate method, test
+    // match diag_obj.send_doip_routing_activation() {
+    //     Ok(()) => debug!("send_doip_routing_activation successfully!"),
+    //     Err(err) => eprintln!("Failed to send_doip_routing_activation: {}", err),
+    // }
 
     /* handle json sequence file */
     //TODO
@@ -129,6 +131,7 @@ fn main() {
             }
         }
 
+        //test
         if let Err(err) = diag_obj.disconnect() {
             eprintln!("diag disconnect Error: {}", err);
             return;

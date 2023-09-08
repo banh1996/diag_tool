@@ -29,7 +29,6 @@ pub struct Doip {
 
 lazy_static::lazy_static! {
     pub static ref CONFIG: RwLock<Config> = RwLock::new(Config {
-    //pub static ref CONFIG: Config = Config {
         ethernet: Ethernet {
             interface: String::new(),
             local_ipv4: None,
@@ -39,7 +38,6 @@ lazy_static::lazy_static! {
             role: String::new(),
         },
         doip: Doip {
-            //version: String::new(),
             version: 0,
             inverse_version: 0,
             tester_addr: 0,

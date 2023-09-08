@@ -1,50 +1,64 @@
 {
     "parameter": {
-        "enable-tester-present": true,
         "vin": "",
-    	"algorithm": "AES128",
-    	"key-lv1": "0x12345678123456781234567812345678",
-	    "timeout": "5s",
-	    "tester-present": true
+        "algorithm": "AES128",
+        "key_lv1": "0x12345678123456781234567812345678",
+        "key_lv2": "",
+        "key_lv3": "",
+        "key_lv4": "",
+        "tester_present": true
     },
-    "sequence": {
-        "cmd": {
+    "sequence": [
+        {
+            "name": "cmd",
             "action": "connect",
             "expect": "0x00",
             "timeout": "3s",
             "fail": "fail_handler"
         },
-        "send_doip": {
+        {
+            "name": "send_doip",
             "action": "activation",
             "expect": "0x00",
             "timeout": "500ms",
             "fail": "fail_handler"
         },
-        "send_diag": {
-            "action": [	"1001", "22f186"],
+        {
+            "name": "send_diag",
+            "action": ["1001", "22f186"],
             "expect": ["7fxxx", "62f186xxx"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
-        "swdl": "/path/to/swdl.json",
-        "send_diag": {
-            "action": [	"1101" ],
-            "expect": [ "7fxxx" ],
+        {
+            "name": "swdl",
+            "action": "/path/to/swdl.json",
+            "expect": [""],
+            "timeout": "",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "send_diag",
+            "action": ["1101"],
+            "expect": ["7fxxx"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
-        "cmd": {
+        {
+            "name": "cmd",
             "action": "disconnect",
             "expect": "0x00",
             "timeout": "1h",
             "fail": "fail_handler"
-	    }
-    },
-    "fail_handler": {
-        "send_diag": {
-            "action": [	"1101" ],
-            "expect": [ "7fxxx" ],
-            "timeout": "5m"
         }
-    }
+    ],
+    "fail_handler": [
+        {
+            "name": "send_diag",
+            "action": ["1101"],
+            "expect": ["7fxxx"],
+            "timeout": "5m",
+            "fail": ""
+        }
+    ]
 }

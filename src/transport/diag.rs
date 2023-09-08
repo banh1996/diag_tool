@@ -145,7 +145,6 @@ pub fn disconnect(&mut self) -> Result<(), io::Error> {
  *  \return     Error code if any
  ****************************************************************************************************************/
 pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
-    //TODO add diag header
     match &mut self.stream {
         Some(stream) => {
             //drop tcp stream

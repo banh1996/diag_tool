@@ -20,7 +20,7 @@ cargo build
 <summary>Work well in Window</summary>
 <summary><s>Parse json configuration file</s></summary>
 <summary>Check json configuration parameters before execute</summary>
-<summary>Parse json sequence file</summary>
+<summary><s>Parse json sequence file</s></summary>
 <summary>Check json sequence parameters before execute</summary>
 <summary>full-sequence for SWDL</summary>
 <summary>Support SWDL for hex, S37, vbf format</summary>

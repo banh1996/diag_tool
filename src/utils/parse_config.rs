@@ -1,7 +1,5 @@
-use crate::transport::config::{Config, Ethernet, Doip};
-use crate::transport::config::CONFIG;
+use crate::transport::config::{Config, Ethernet, Doip, CONFIG};
 use std::io::{self, Read, Error, ErrorKind};
-
 use log::debug;
 use std::fs::File;
 
