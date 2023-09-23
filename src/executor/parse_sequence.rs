@@ -1,7 +1,9 @@
 use log::debug;
-use executor::executor;
+use executor;
+use std::sync::{Arc, Mutex};
 use std::fs::File;
 use std::io::{self, Read};
+use transport;
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
 
 
@@ -37,17 +39,24 @@ pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
         tester_present: seq_obj.parameter.tester_present,
     };
 
+    //Init Exeutor object
+    let diag_obj = Arc::new(Mutex::new(transport::diag::create_diag()));
+    let mut executor_obj = executor::executor::Executor::create_executor(Arc::clone(&diag_obj));
+
     for item in seq_obj.sequence {
         // Access fields of the SequenceItem struct for processing
         debug!("Name: {}", item.name);
         debug!("Action: {:?}", item.action);
         debug!("Expect: {:?}", item.expect);
         debug!("Timeout: {}", item.timeout);
-        debug!("Fail: {}", item.fail);
-        debug!("--------------------------");
+        //debug!("Fail: {}", item.fail);
+        //debug!("--------------------------");
 
         //TODO: call to executor
-        executor::execute_cmd(item);
+        match executor_obj.execute_cmd(item) {
+            Ok(()) => println!("Command executed successfully!"),
+            Err(err) => eprintln!("Error executing command: {}", err),
+        }
     }
 
 

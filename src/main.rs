@@ -3,7 +3,7 @@ extern crate log;
 extern crate serde_json;
 extern crate serde;
 
-use std::thread;
+// use std::thread;
 use log::debug;
 use std::env;
 use getopts::Options;
@@ -11,6 +11,7 @@ use getopts::Options;
 
 mod utils {
     pub mod parse_config;
+    pub mod common;
 }
 
 mod executor {
@@ -81,7 +82,7 @@ fn main() {
 
     /* init transport module */
     //TODO: pass Diag object to executor
-    let mut diag_obj = transport::diag::create_diag();
+    //let mut diag_obj = transport::diag::create_diag();
 
     // // Call connect method, test
     // match diag_obj.connect() {
@@ -110,7 +111,7 @@ fn main() {
         print_usage(&args[0], &opts);
         return;
     }
-
+/*
     //TODO: spawn thread to handl sequence, main thread to handle CLI
     // Spawn a new thread to handle data reception and detach it.
     thread::spawn(move || {
@@ -140,7 +141,7 @@ fn main() {
             debug!("Disconnected!");
         }
     });
-
+*/
     //TODO: impliment CLI
     loop {}
 }

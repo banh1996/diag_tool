@@ -227,7 +227,7 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
  *  brief      Function to receive tcp data to ECU
  *  details    -
  *  \param[in]  stream: TcpStream that used with mutex to prevent race condition when sending/reading data
- *              timeout: timeout to wait for new doip data. If there's no data, return error
+ *              timeout: timeout(milliseconds) to wait for new doip data. If there's no data, return error
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
@@ -245,7 +245,7 @@ pub fn receive_tcp(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Vec<u
     let mut stream_lock = stream.lock().unwrap();
 
     // Set a read timeout
-    if let Err(e) = stream_lock.set_read_timeout(Some(Duration::from_secs(timeout))) {
+    if let Err(e) = stream_lock.set_read_timeout(Some(Duration::from_millis(timeout))) {
         if e.kind() == ErrorKind::WouldBlock {
             // Timeout: Cannot set read timeout on non-blocking socket
             return Err(Error::new(ErrorKind::TimedOut, "Timeout: Cannot set read timeout on non-blocking socket"));

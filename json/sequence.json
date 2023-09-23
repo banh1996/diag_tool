@@ -10,23 +10,23 @@
     },
     "sequence": [
         {
-            "name": "cmd",
+            "name": "socket",
             "action": "connect",
-            "expect": "0x00",
+            "expect": "0",
             "timeout": "3s",
             "fail": "fail_handler"
         },
         {
             "name": "send_doip",
             "action": "activation",
-            "expect": "0x00",
+            "expect": "0",
             "timeout": "500ms",
             "fail": "fail_handler"
         },
         {
             "name": "send_diag",
             "action": ["1001", "22f186"],
-            "expect": ["7fxxx", "62f186xxx"],
+            "expect": ["7f*", "62f186*"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
@@ -40,15 +40,15 @@
         {
             "name": "send_diag",
             "action": ["1101"],
-            "expect": ["7fxxx"],
+            "expect": ["7f*"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
         {
-            "name": "cmd",
+            "name": "socket",
             "action": "disconnect",
             "expect": "0x00",
-            "timeout": "1h",
+            "timeout": "1m",
             "fail": "fail_handler"
         }
     ],
@@ -56,7 +56,7 @@
         {
             "name": "send_diag",
             "action": ["1101"],
-            "expect": ["7fxxx"],
+            "expect": ["7f*"],
             "timeout": "5m",
             "fail": ""
         }

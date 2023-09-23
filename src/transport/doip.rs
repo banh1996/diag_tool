@@ -131,26 +131,39 @@ pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
 pub fn send_doip(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>, type_field: u16) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
 
-    // Get the DoIPHeader to a Vec<u8>
-    let doip_header_bytes = construct_doip_header(type_field, p_data.len() as u32);
-
-    // Handle the doip_header_bytes Result and get the Vec<u8> value
-    let mut doip_header_bytes = match doip_header_bytes {
-        Ok(bytes) => bytes,
-        Err(e) => {
-            // Handle the error if necessary
-            return Err(e);
-        }
-    };
+    let mut doip_header_bytes: Vec<u8>;
 
     // Check type field to append address
     match type_field {
         0x8001 => { //diagnostic message request
+            // Get the DoIPHeader to a Vec<u8>
+            let doip_header = construct_doip_header(type_field, 4 + p_data.len() as u32);
+
+            // Handle the doip_header_bytes Result and get the Vec<u8> value
+            doip_header_bytes = match doip_header {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    // Handle the error if necessary
+                    return Err(e);
+                }
+            };
+
             //Add tester&ECU addr to doip payload
             doip_header_bytes.extend_from_slice(&config.doip.tester_addr.to_be_bytes());
             doip_header_bytes.extend_from_slice(&config.doip.ecu_addr.to_be_bytes());
         },
         0x0005 => { // Routing activation request
+            // Get the DoIPHeader to a Vec<u8>
+            let doip_header = construct_doip_header(type_field, 2 + p_data.len() as u32);
+
+            // Handle the doip_header_bytes Result and get the Vec<u8> value
+            doip_header_bytes = match doip_header {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    // Handle the error if necessary
+                    return Err(e);
+                }
+            };
             doip_header_bytes.extend_from_slice(&config.doip.tester_addr.to_be_bytes());
         },
         _ => {
@@ -228,7 +241,7 @@ pub fn send_doip_routing_activation(stream: &Arc<Mutex<TcpStream>>) -> Result<()
  *  brief      Function to receive doip data to ECU
  *  details    -
  *  \param[in]  stream: TcpStream that used with mutex to prevent race condition when sending/reading data
- *              timeout: timeout to wait for new doip data. If there's no data, return error
+ *              timeout: timeout(milliseconds) to wait for new doip data. If there's no data, return error
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE

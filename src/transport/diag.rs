@@ -12,7 +12,10 @@ pub trait Transport {
     fn disconnect(&mut self) -> Result<(), io::Error>;
     fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error>;
     fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error>;
+
+    /**************** doip interface ****************/
     fn send_doip_routing_activation(&mut self) -> Result<(), io::Error>;
+    fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Error>;
 }
 
 pub struct Diag {
@@ -43,6 +46,10 @@ impl Transport for Diag {
 
     fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
         self.send_doip_routing_activation()
+    }
+
+    fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Error> {
+        self.receive_doip(timeout)
     }
 }
 
@@ -165,7 +172,7 @@ pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
  *  transport::diag::receive_diag function
  *  brief      Function to receive diag data to ECU
  *  details    -
- *  \param[in]  timeout: timeout to wait for new diag data. If there's no data, return error
+ *  \param[in]  timeout: timeout(milliseconds) to wait for new diag data. If there's no data, return error
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE
@@ -211,11 +218,37 @@ pub fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
             //drop tcp stream
             match doip::send_doip_routing_activation(stream) {
                 Ok(()) => {
-                    Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
+                    Ok(())
                 }
                 Err(e) => {
                     eprintln!("Error: {}", e);
                     Err(e)
+                }
+            }
+        }
+        None => Err(io::Error::new(
+            io::ErrorKind::NotConnected,
+            "Not connected to any server",
+        )),
+    }
+}
+
+pub fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Error> {
+    match &mut self.stream {
+        Some(stream) => {
+            //drop tcp stream
+            match doip::receive_doip(stream, timeout) {
+                Ok(Some(data)) => {
+                    // Process the received data
+                    debug!("Received {} bytes: {:?}", data.len(), data);
+                    return Ok(None)
+                },
+                Ok(None) => {
+                    return Ok(None)
+                }
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    return Err(e)
                 }
             }
         }
