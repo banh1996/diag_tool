@@ -25,6 +25,13 @@
         },
         {
             "name": "send_diag",
+            "action": ["31010206",  "22f186",  "82", "1002"],
+            "expect": ["71010206*", "62f186*", "*",  "5102*"],
+            "timeout": "1s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "send_diag",
             "action": ["1001", "22f186"],
             "expect": ["5001*", "62f186*"],
             "timeout": "1s",

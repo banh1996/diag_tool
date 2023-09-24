@@ -1,6 +1,6 @@
 use crate::transport::config::CONFIG;
 use crate::transport::doip;
-use std::io::{self, Error, ErrorKind};
+use std::io;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use log::debug;
@@ -99,7 +99,6 @@ pub fn connect(&mut self) -> Result<(), io::Error> {
 
     match doip::connect(server_addr) {
         Ok(stream) => {
-            // TODO
             self.stream = Some(stream); //transfer stream ownership to self.stream
             Ok(())
         }
@@ -123,7 +122,6 @@ pub fn connect(&mut self) -> Result<(), io::Error> {
  *  \return      Error code if any
  ****************************************************************************************************************/
 pub fn disconnect(&mut self) -> Result<(), io::Error> {
-    //TODO
     //let config = CONFIG.read().unwrap();
     match &mut self.stream {
         Some(stream) => {
@@ -182,19 +180,22 @@ pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
 pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
     match &mut self.stream {
         Some(stream) => {
-            //drop tcp stream
-            match doip::receive_doip(stream, timeout) {
-                Ok(Some(data)) => {
-                    // Process the received data
-                    debug!("Received diag {} bytes: {:?}", data.len(), data);
-                    Ok(data)
-                },
-                Ok(None) => {
-                    Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
-                }
-                Err(e) => {
-                    eprintln!("Error receive_diag: {}", e);
-                    Err(e)
+            loop {
+                //drop tcp stream
+                match doip::receive_doip(stream, timeout) {
+                    Ok(Some(data)) => {
+                        // Process the received data
+                        debug!("Received diag {} bytes: {:?}", data.len(), data);
+                        return Ok(data);
+                    },
+                    Ok(None) => {
+                        //Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
+                        continue;//ignore diagnostic ACK also
+                    }
+                    Err(e) => {
+                        eprintln!("Error receive_diag: {}", e);
+                        return Err(e);
+                    }
                 }
             }
         }
@@ -239,7 +240,7 @@ pub fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Erro
                 Ok(Some(data)) => {
                     // Process the received data
                     debug!("Received doip {} bytes: {:?}", data.len(), data);
-                    return Ok(None)
+                    return Ok(None);
                 },
                 Ok(None) => {
                     return Ok(None)

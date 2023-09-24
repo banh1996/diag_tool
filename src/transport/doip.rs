@@ -308,10 +308,35 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                         return Ok(Some(diag_payload));
                     },
                     0x8002 => { //DoIP message ACK, ignore
-                        continue;
+                        let (addresses_bytes, doip_payload_bytes) = payload.split_at(4);
+                        // Check addresses matches with config
+                        if u16::from_be_bytes([addresses_bytes[0], addresses_bytes[1]]) & config.doip.ecu_addr
+                            != config.doip.ecu_addr {
+                            continue;
+                        }
+                        if u16::from_be_bytes([addresses_bytes[2], addresses_bytes[3]]) & config.doip.tester_addr
+                            != config.doip.tester_addr {
+                            continue;
+                        }
+                        if doip_payload_bytes[0] == 0 {
+                            return Ok(None);
+                        }
+                        return Err(Error::new(ErrorKind::InvalidData, "Doip ACK received is not expected"));
                     },
-                    0x0006 => { // Routing activation successful
-                        G_IS_ROUTING_SUCCESS.store(true, Ordering::Relaxed);
+                    0x0006 => { // Routing activation response
+                        let (addresses_bytes, doip_payload_bytes) = payload.split_at(4);
+                        // Check addresses matches with config
+                        if u16::from_be_bytes([addresses_bytes[0], addresses_bytes[1]]) & config.doip.tester_addr
+                            != config.doip.tester_addr {
+                            continue;
+                        }
+                        if u16::from_be_bytes([addresses_bytes[2], addresses_bytes[3]]) & config.doip.ecu_addr
+                            != config.doip.ecu_addr {
+                            continue;
+                        }
+                        if doip_payload_bytes[0] == 0x10 { //Routing activation successful
+                            G_IS_ROUTING_SUCCESS.store(true, Ordering::Relaxed);
+                        }
                         return Ok(None);
                     },
                     _ => {

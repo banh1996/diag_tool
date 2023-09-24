@@ -70,8 +70,6 @@ pub fn compare_expect_value(string_a: &str, vec_b: Vec<u8>) -> bool {
     let mut iter_a = string_a.chars().flat_map(char::to_lowercase);
     let mut iter_b = string_b.chars().flat_map(char::to_lowercase);
 
-    println!("here {} {}", string_a, string_b);
-
     while let (Some(char_a), Some(char_b)) = (iter_a.next(), iter_b.next()) {
         if char_a == '*' {
             // If '*' is encountered in string_a, treat it as a match and continue

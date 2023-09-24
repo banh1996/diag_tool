@@ -143,12 +143,24 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                     for (i, action) in action_vecs.iter().enumerate() {
                         let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
                         let u8_action = utils::common::hex_strings_to_u8(&hex_action);
+                        let first_byte = u8_action[0];
                         match stream.send_diag(u8_action) {
                             Ok(()) => {}
                             Err(err) => {
                                 eprintln!("Failed to send diag activation: {}", err);
                                 return Err(err);
                             }
+                        }
+                        //Check suppress reply bit
+                        if (first_byte & 0x80) == 0x80 {
+                            debug!("found suppress bit, ignore checking respond diag");
+                            //Ignore DoIP ACK
+                            match stream.receive_doip(timeout) {
+                                Ok(Some(_data)) => {}
+                                Ok(None) => {}
+                                Err(err) => eprintln!("Failed to Receive doip activation: {}", err),
+                            }
+                            continue;
                         }
                         match stream.receive_diag(timeout) {
                             Ok(data) => {
@@ -172,7 +184,6 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                                 // debug!("Receive diag data {:?} successfully! {}", data, utils::common::check_expect(&item.expect.as_str(), data));
                             }
                             Err(err) => {
-                                eprintln!("Failed to Receive diag data: {}", err);
                                 return Err(err);
                             }
                         }
