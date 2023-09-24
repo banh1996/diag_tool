@@ -180,22 +180,20 @@ pub fn send_diag(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
  *              Error code if any
  ****************************************************************************************************************/
 pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
-    //TODO: add diag header
-    //let config = CONFIG.read().unwrap();
     match &mut self.stream {
         Some(stream) => {
             //drop tcp stream
             match doip::receive_doip(stream, timeout) {
                 Ok(Some(data)) => {
                     // Process the received data
-                    debug!("Received {} bytes: {:?}", data.len(), data);
+                    debug!("Received diag {} bytes: {:?}", data.len(), data);
                     Ok(data)
                 },
                 Ok(None) => {
                     Err(Error::new(ErrorKind::InvalidData, "No any diag payload found"))
                 }
                 Err(e) => {
-                    eprintln!("Error: {}", e);
+                    eprintln!("Error receive_diag: {}", e);
                     Err(e)
                 }
             }
@@ -240,7 +238,7 @@ pub fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Erro
             match doip::receive_doip(stream, timeout) {
                 Ok(Some(data)) => {
                     // Process the received data
-                    debug!("Received {} bytes: {:?}", data.len(), data);
+                    debug!("Received doip {} bytes: {:?}", data.len(), data);
                     return Ok(None)
                 },
                 Ok(None) => {

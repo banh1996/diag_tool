@@ -196,15 +196,14 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
     }
 
     // Print the data in string format
-    let data_as_string: String = p_data.iter().map(|&x| x as u8 as char).collect();
-    debug!("Data as string: {}", data_as_string);
+    //let data_as_string: String = p_data.iter().map(|&x| x as u8 as char).collect();
 
     // Print the data in hexadecimal format
     let data_as_hex: String = p_data
         .iter()
         .map(|&x| format!("{:02X}", x as u8))
         .collect();
-    debug!("Data as hex: {}", data_as_hex);
+    debug!("Sent TCP Data as hex: {}", data_as_hex);
 
     let mut stream_lock = stream.lock().unwrap(); //lock mutex to send tcp data
 

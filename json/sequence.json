@@ -26,7 +26,7 @@
         {
             "name": "send_diag",
             "action": ["1001", "22f186"],
-            "expect": ["7f*", "62f186*"],
+            "expect": ["5001*", "62f186*"],
             "timeout": "1s",
             "fail": "fail_handler"
         },

@@ -201,7 +201,7 @@ pub fn send_doip_diag(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result
         return Err(Error::new(ErrorKind::WouldBlock, "Do activation routing before send diag messages!"));
     }
 
-    if let Err(e) = send_doip(stream, p_data, 0x8100) {
+    if let Err(e) = send_doip(stream, p_data, 0x8001) {
         eprintln!("send_doip_diag Error: {}", e);
         return Err(e);
     }
@@ -320,7 +320,7 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                 }
             }
             Err(e) => {
-                eprintln!("Error: {}", e);
+                eprintln!("Error receive_doip: {}", e);
                 return Err(e);
             }
         }

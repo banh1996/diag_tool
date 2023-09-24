@@ -1,5 +1,5 @@
 use log::debug;
-use std::io;
+use std::io::{self, Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use serde_json::Value;
 use utils;
@@ -60,7 +60,7 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                     }
                 }
                 _ => {
-                    println!("Invalid action format");
+                    debug!("socket Invalid action format");
                 }
             }
         }
@@ -86,17 +86,105 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                     debug!("Not allow Multiple Actions in socket object:");
                     for action in multiple_actions {
                         if let Value::String(action_string) = action {
-                            println!("{}", action_string);
+                            debug!("{}", action_string);
+                        }
+                    }
+                }
+                _ => debug!("send_doip Invalid action format"),
+            }
+        }
+        "send_diag" => {
+            match &item.action {
+                Value::String(single_action_str) => {
+                    match single_action_str.as_str() {
+                        _ => {
+                            let actions: Vec<u8> = single_action_str
+                                .chars()
+                                .collect::<Vec<char>>()
+                                .chunks(2)
+                                .map(|chunk| {
+                                    let hex_str: String = chunk.iter().collect();
+                                    u8::from_str_radix(&hex_str, 16).unwrap_or(0)
+                                })
+                                .collect();
+                            // Now 'actions' contains the parsed Vec<u8>
+                            let hex_actions: Vec<String> = actions.iter().map(|&x| format!("0x{:02X}", x)).collect();
+                            println!("Parsed signle action: {:?}", hex_actions);
+                            let u8_actions = utils::common::hex_strings_to_u8(&hex_actions);
+                            match stream.send_diag(u8_actions) {
+                                Ok(()) => debug!("Send diag successfully!"),
+                                Err(err) => eprintln!("Failed to send diag activation: {}", err),
+                            }
+                            match stream.receive_diag(timeout) {
+                                Ok(data) => debug!("Receive diag data {:?} successfully!", data),
+                                Err(err) => eprintln!("Failed to Receive diag activation: {}", err),
+                            }
+                        }
+                    }
+                }
+                Value::Array(multiple_actions) => {
+                    // Handle Value::Array case
+                    let mut action_vecs: Vec<Vec<u8>> = Vec::new();
+                    for action_str in multiple_actions.iter() {
+                        if let Some(action) = action_str.as_str() {
+                            let parsed_action: Vec<u8> = action
+                                .chars()
+                                .collect::<Vec<char>>()
+                                .chunks(2)
+                                .map(|chunk| {
+                                    let hex_str: String = chunk.iter().collect();
+                                    u8::from_str_radix(&hex_str, 16).unwrap_or(0)
+                                })
+                                .collect();
+                            action_vecs.push(parsed_action);
+                        }
+                    }
+                    // Now 'action_vecs' contains the parsed Vec<u8> for multiple actions
+                    for (i, action) in action_vecs.iter().enumerate() {
+                        let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
+                        let u8_action = utils::common::hex_strings_to_u8(&hex_action);
+                        match stream.send_diag(u8_action) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                eprintln!("Failed to send diag activation: {}", err);
+                                return Err(err);
+                            }
+                        }
+                        match stream.receive_diag(timeout) {
+                            Ok(data) => {
+                                // Access the "expect" array
+                                if let Some(expect_array) = item.expect.as_array() {
+                                    if i < expect_array.len() {
+                                        // Access the "expect" value at the specified index
+                                        let expect_value = &expect_array[i];
+                                        // Check if the value is a string
+                                        if let Some(expect_str) = expect_value.as_str() {
+                                            debug!("Sent {:?}, Expect at index {}: {}, Receive {:?}", hex_action, i, expect_str, data);
+                                            if utils::common::compare_expect_value(expect_str, data) == false {
+                                                return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
+                                            }
+                                        } else {
+                                            eprintln!("Value at index {} is not a string.", i);
+                                            return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                                        }
+                                    }
+                                }
+                                // debug!("Receive diag data {:?} successfully! {}", data, utils::common::check_expect(&item.expect.as_str(), data));
+                            }
+                            Err(err) => {
+                                eprintln!("Failed to Receive diag data: {}", err);
+                                return Err(err);
+                            }
                         }
                     }
                 }
                 _ => {
-                    println!("Invalid action format");
+                    eprintln!("send_diag Invalid action format");
+                    return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                 }
             }
         }
-        "send_diag" => println!("Not support now!"),
-        _ => println!("It's something else!"),
+        _ => println!("This action name is not supported"),
     }
     Ok(())
 }
@@ -107,13 +195,3 @@ pub fn create_executor(s_diag_obj: Arc<Mutex<transport::diag::Diag>>) -> Self {
 }
 
 }
-
-// Public function that returns a new Diag object
-// pub fn create_executor() -> Exe {
-//     Exe::init();
-
-//     Exe {
-//         //stream: None, // Initialize the stream field to None
-//         s_diag_obj : Mutex::new(transport::diag::create_diag())
-//     }
-// }

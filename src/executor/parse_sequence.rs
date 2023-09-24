@@ -54,11 +54,13 @@ pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
 
         //TODO: call to executor
         match executor_obj.execute_cmd(item) {
-            Ok(()) => println!("Command executed successfully!"),
-            Err(err) => eprintln!("Error executing command: {}", err),
+            Ok(()) => debug!("Command executed successfully!"),
+            Err(err) => {
+                eprintln!("Error executing command: {}, STOP", err);
+                return Err(err);
+            }
         }
     }
-
 
     Ok(())
 }
