@@ -189,7 +189,7 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
         }
         s if s.starts_with("securityaccess_") => {
             // Extract the number after "securityaccess_"
-            if let Ok(level) = s[15..].parse::<u8>() {
+            if let Ok(level) = u8::from_str_radix(&s[15..], 16) {
                 debug!("Security Access level: {}", level);
                 let mut rng = rand::thread_rng();
                 //get parameter of secure-access in action item
@@ -222,47 +222,59 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                         return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                     }
                 }
-                let specified_bytes: [u8; 6] = [0x27, level, (message_id & 0xFF) as u8, ((message_id >> 8) & 0xFF) as u8, (authentication_method & 0xFF) as u8, ((authentication_method >> 8) & 0xFF) as u8];
+                // Convert message_id and authentication_method to big endian bytes
+                let message_id_bytes = message_id.to_be_bytes();
+                let authentication_method_bytes = authentication_method.to_be_bytes();
+                let specified_bytes: [u8; 6] = [
+                    0x27,
+                    level,
+                    message_id_bytes[0], // Big endian byte 1 of message_id
+                    message_id_bytes[1], // Big endian byte 2 of message_id
+                    authentication_method_bytes[0], // Big endian byte 1 of authentication_method
+                    authentication_method_bytes[1], // Big endian byte 2 of authentication_method
+                ];
                 let mut byte_array: Vec<u8> = Vec::with_capacity(52);
                 byte_array.extend_from_slice(&specified_bytes);
                 if algorithm == "AES-128-CMAC" {
+                    let mut iv_bytes: [u8; 16] = [0; 16];
                     if iv == "random" {
-                        let mut iv_bytes: [u8; 16] = [0; 16];
                         for i in 0..iv_bytes.len() {
                             iv_bytes[i] = rng.gen::<u8>();
                         }
-                        //add iv
-                        byte_array.extend_from_slice(&iv_bytes);
+                    }
+                    //add iv
+                    byte_array.extend_from_slice(&iv_bytes);
 
-                        //TODO: calculate encrypted_data_record and authentication_data
-                        // Generating 46 random bytes
-                        let mut random_bytes: [u8; 16] = [0; 16];
-                        for i in 0..random_bytes.len() {
-                            random_bytes[i] = rng.gen::<u8>();
+                    // Generating random seed
+                    let mut seed_bytes: [u8; 16] = [0; 16];
+                    for i in 0..seed_bytes.len() {
+                        seed_bytes[i] = rng.gen::<u8>();
+                    }
+
+                    //Create Request seed packet
+                    match utils::excrypto::encrypt_aes128_ctr(&seed_bytes, &iv_bytes, clientkey) {
+                        Ok(encrypted_data_record) => {
+                            debug!("Secure-access ctr encrypted_data_record: {:?}", encrypted_data_record);
+                            let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
+                            //add encrypted_data_record
+                            byte_array.extend_from_slice(&encrypted_first_16_bytes);
+
+                            match utils::excrypto::encrypt_aes128_cmac(&byte_array, clientkey) {
+                                Ok(authentication_data) => {
+                                    debug!("Secure-access cmac Encrypted data: {:?}", authentication_data);
+                                    let authentication_data_first_16_bytes: Vec<u8> = authentication_data.iter().take(16).cloned().collect();
+                                    //add authentication_data
+                                    byte_array.extend_from_slice(&authentication_data_first_16_bytes);
+                                }
+                                Err(err) => {
+                                    eprintln!("Encryption error: {}", err);
+                                    return Err(err);
+                                }
+                            }
                         }
-
-                        match utils::excrypto::encrypt_aes128_ctr(&random_bytes, &iv_bytes, clientkey) {
-                            Ok(encrypted_data_record) => {
-                                debug!("Secure-access ctr Encrypted data: {:?}", encrypted_data_record);
-                                let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
-                                //add encrypted_data_record
-                                byte_array.extend_from_slice(&encrypted_first_16_bytes);
-                            }
-                            Err(error) => {
-                                eprintln!("Encryption error: {}", error);
-                            }
-                        }
-
-                        match utils::excrypto::encrypt_aes128_cmac(&random_bytes, serverkey) {
-                            Ok(encrypted_data_record) => {
-                                debug!("Secure-access cmac Encrypted data: {:?}", encrypted_data_record);
-                                let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
-                                //add encrypted_data_record
-                                byte_array.extend_from_slice(&encrypted_first_16_bytes);
-                            }
-                            Err(error) => {
-                                eprintln!("Encryption error: {}", error);
-                            }
+                        Err(err) => {
+                            eprintln!("Encryption error: {}", err);
+                            return Err(err);
                         }
                     }
                 }
@@ -299,8 +311,10 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                         return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                     }
                 }
+
+                //TODO: Implement SendKey
             } else {
-                println!("Invalid SA format: {}", s);
+                eprintln!("Invalid SA format: {}", s);
             }
         }
         "swdl" => {debug!("not support now")}

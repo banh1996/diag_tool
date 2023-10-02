@@ -186,6 +186,9 @@ pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
                     Ok(Some(data)) => {
                         // Process the received data
                         debug!("Received diag {} bytes: {:?}", data.len(), data);
+                        if data.len() == 3 && data[0] == 0x7f && data[2] == 0x78 { //pending diag
+                            continue;
+                        }
                         return Ok(data);
                     },
                     Ok(None) => {
