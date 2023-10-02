@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{self, Read};
 use transport;
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
-
+use crate::transport::config::CONFIG;
 
 /*****************************************************************************************************************
  *  executor::parse function
@@ -18,6 +18,8 @@ use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
  *  \return -
  ****************************************************************************************************************/
 pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
+    let config = CONFIG.read().unwrap();
+
     // Read the JSON file and update the `CONFIG` global variable
     let mut file = File::open(&sequence_filename).expect("Failed to open config file");
     let mut json_contents = String::new();
@@ -53,7 +55,7 @@ pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
         //debug!("--------------------------");
 
         //TODO: call to executor
-        match executor_obj.execute_cmd(item) {
+        match executor_obj.execute_cmd(item, &config.ethernet.vendor) {
             Ok(()) => debug!("Command executed successfully!"),
             Err(err) => {
                 eprintln!("Error executing command: {}, STOP", err);

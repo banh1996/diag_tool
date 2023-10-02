@@ -39,7 +39,7 @@
         },
         {
             "name": "securityaccess_05",
-            "action": ["algorithm:AES-128-CMAC", "iv:random", "clientkey:ffffffffffffffffffffffffffffffff", "serverkey:ffffffffffffffffffffffffffffffff"],
+            "action": ["algorithm:AES128", "iv:random", "clientkey:ffffffffffffffffffffffffffffffff", "serverkey:ffffffffffffffffffffffffffffffff"],
             "expect": ["67*"],
             "timeout": "2s",
             "fail": "fail_handler"

@@ -15,6 +15,7 @@ pub struct Ethernet {
     pub remote_ip: String,
     pub remote_port: String,
     pub role: String,
+    pub vendor: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -37,6 +38,7 @@ lazy_static::lazy_static! {
             remote_ip: String::new(),
             remote_port: String::new(),
             role: String::new(),
+            vendor: String::new(),
         },
         doip: Doip {
             version: 0,

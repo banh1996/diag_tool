@@ -41,7 +41,10 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
         let role = config_data["ethernet"]["role"]
             .as_str().expect("Invalid role field")
             .to_owned();
-        Ethernet { interface, local_ipv4, local_ipv6, remote_ip, remote_port, role }
+        let vendor = config_data["ethernet"]["vendor"]
+            .as_str().expect("Invalid vendor field")
+            .to_owned();
+        Ethernet { interface, local_ipv4, local_ipv6, remote_ip, remote_port, role, vendor }
     };
 
     let doip: Doip = {

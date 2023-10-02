@@ -4,7 +4,8 @@
         "local_ipv4": "localhost",
         "remote_ip": "169.254.4.10",
         "remote_port": "13400",
-        "role": "client"
+        "role": "client",
+        "vendor": "volvo"
     },
     "doip": {
         "version": "0x2",
