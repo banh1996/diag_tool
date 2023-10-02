@@ -2,16 +2,23 @@ extern crate getopts;
 extern crate log;
 extern crate serde_json;
 extern crate serde;
+extern crate rand;
 
+extern crate cmac;
+extern crate aes;
+extern crate cipher;
+extern crate ctr;
 // use std::thread;
 use log::debug;
 use std::env;
 use getopts::Options;
+
 //use log::{debug, info};
 
 mod utils {
     pub mod parse_config;
     pub mod common;
+    pub mod excrypto;
 }
 
 mod executor {

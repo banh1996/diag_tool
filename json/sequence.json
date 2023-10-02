@@ -1,7 +1,7 @@
 {
     "parameter": {
         "vin": "",
-        "algorithm": "AES128",
+        "algorithm": "AES-128-CMAC",
         "key_lv1": "0x12345678123456781234567812345678",
         "key_lv2": "",
         "key_lv3": "",
@@ -19,15 +19,8 @@
         {
             "name": "send_doip",
             "action": "activation",
-            "expect": "0",
+            "expect": "10",
             "timeout": "500ms",
-            "fail": "fail_handler"
-        },
-        {
-            "name": "send_diag",
-            "action": ["31010206",  "22f186",  "82", "1002"],
-            "expect": ["71010206*", "62f186*", "*",  "5102*"],
-            "timeout": "1s",
             "fail": "fail_handler"
         },
         {
@@ -38,17 +31,24 @@
             "fail": "fail_handler"
         },
         {
-            "name": "swdl",
-            "action": "/path/to/swdl.json",
-            "expect": [""],
-            "timeout": "",
+            "name": "send_diag",
+            "action": ["31010206",  "22f186",  "82"],
+            "expect": ["71010206*", "62f186*", "*"],
+            "timeout": "1s",
             "fail": "fail_handler"
         },
         {
-            "name": "send_diag",
-            "action": ["1101"],
-            "expect": ["7f*"],
-            "timeout": "1s",
+            "name": "securityaccess_05",
+            "action": ["algorithm:AES-128-CMAC", "iv:random", "clientkey:ffffffffffffffffffffffffffffffff", "serverkey:ffffffffffffffffffffffffffffffff"],
+            "expect": ["67*"],
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "swdl",
+            "action": "/path/to/A.vbf",
+            "expect": [""],
+            "timeout": "",
             "fail": "fail_handler"
         },
         {

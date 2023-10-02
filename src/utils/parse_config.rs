@@ -59,6 +59,9 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
         let ecu_addr_string = config_data["doip"]["ecu_addr"]
             .as_str().expect("Invalid ecu_addr field")
             .to_owned();
+        let sga_addr_string = config_data["doip"]["sga_addr"]
+            .as_str().expect("Invalid sga_addr field")
+            .to_owned();
         let activation_code_string = config_data["doip"]["activation_code"]
             .as_str().expect("Invalid activation_code field")
             .to_owned();
@@ -99,6 +102,15 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
                 return Err(Error::new(ErrorKind::InvalidInput, error_message));
             }
         };
+        let sga_addr_string = sga_addr_string.trim_start_matches("0x");
+        let sga_addr: u16 = match u16::from_str_radix(sga_addr_string, 16) {
+            Ok(result) => result,
+            Err(err) => {
+                let error_message = format!("version string in json file not correct type: {}", err);
+                eprintln!("version string in json file not correct type: {}", err);
+                return Err(Error::new(ErrorKind::InvalidInput, error_message));
+            }
+        };
         let activation_code_string = activation_code_string.trim_start_matches("0x");
         let activation_code: u8 = match u8::from_str_radix(activation_code_string, 16) {
             Ok(result) => result,
@@ -108,7 +120,7 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
                 return Err(Error::new(ErrorKind::InvalidInput, error_message));
             }
         };
-        Doip { version, inverse_version, tester_addr, ecu_addr, activation_code }
+        Doip { version, inverse_version, tester_addr, ecu_addr, sga_addr, activation_code }
     };
 
     // Update the CONFIG global variable

@@ -2,15 +2,16 @@
     "ethernet": {
         "interface": "eth0",
         "local_ipv4": "localhost",
-        "remote_ip": "localhost",
+        "remote_ip": "169.254.4.10",
         "remote_port": "13400",
         "role": "client"
     },
     "doip": {
         "version": "0x2",
         "inverse_version": "0xfd",
-        "tester_addr": "0x1234",
-        "ecu_addr": "0x5678",
+        "tester_addr": "0x0e80",
+        "ecu_addr": "0x1d0d",
+        "sga_addr": "0x1d24",
         "activation_code": "0"
     }
 }

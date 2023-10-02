@@ -23,6 +23,7 @@ pub struct Doip {
     pub inverse_version: u8,
     pub tester_addr: u16,
     pub ecu_addr: u16,
+    pub sga_addr: u16,
     pub activation_code: u8,
 }
 
@@ -42,6 +43,7 @@ lazy_static::lazy_static! {
             inverse_version: 0,
             tester_addr: 0,
             ecu_addr: 0,
+            sga_addr: 0,
             activation_code: 0,
         },
     });

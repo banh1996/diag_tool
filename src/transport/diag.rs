@@ -65,9 +65,9 @@ impl Diag {
  *  \return -
  ****************************************************************************************************************/
 pub fn init() {
-    let config = CONFIG.read().unwrap();
-    debug!("ethernet: {:?}", &config.ethernet.local_ipv4);
-    debug!("doip: {:?}", &config.doip);
+    //let config = CONFIG.read().unwrap();
+    //debug!("ethernet: {:?}", &config.ethernet.local_ipv4);
+    //debug!("doip: {:?}", &config.doip);
 
     // initialize
     doip::init();
@@ -89,13 +89,13 @@ pub fn init() {
 pub fn connect(&mut self) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
     // Extract the local IPv4 as a regular String or use an empty string if it's None.
-    let local_ipv4 = if let Some(ipv4) = &config.ethernet.local_ipv4 {
-        ipv4.to_string()
-    } else {
-        String::new()
-    };
+    // let remote_ip = if let Some(ipv4) = &config.ethernet.remote_ip {
+    //     ipv4.to_string()
+    // } else {
+    //     String::new()
+    // };
     // Concatenate the local IPv4 and port using the format! macro.
-    let server_addr = format!("{}:{}", local_ipv4, config.ethernet.remote_port);
+    let server_addr = format!("{}:{}", &config.ethernet.remote_ip, config.ethernet.remote_port);
 
     match doip::connect(server_addr) {
         Ok(stream) => {

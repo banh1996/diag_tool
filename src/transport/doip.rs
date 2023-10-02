@@ -6,6 +6,7 @@ use std::io::{self, Error, ErrorKind};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
+use debug;
 
 /*****************************************************************************************************************
  *  Define all gloval macro & variable here
@@ -326,17 +327,19 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                     0x0006 => { // Routing activation response
                         let (addresses_bytes, doip_payload_bytes) = payload.split_at(4);
                         // Check addresses matches with config
+                        debug!("Receive doip activation {:?}", addresses_bytes);
                         if u16::from_be_bytes([addresses_bytes[0], addresses_bytes[1]]) & config.doip.tester_addr
                             != config.doip.tester_addr {
                             continue;
                         }
-                        if u16::from_be_bytes([addresses_bytes[2], addresses_bytes[3]]) & config.doip.ecu_addr
-                            != config.doip.ecu_addr {
+                        if u16::from_be_bytes([addresses_bytes[2], addresses_bytes[3]]) & config.doip.sga_addr
+                            != config.doip.sga_addr {
                             continue;
                         }
                         if doip_payload_bytes[0] == 0x10 { //Routing activation successful
                             G_IS_ROUTING_SUCCESS.store(true, Ordering::Relaxed);
                         }
+                        //TODO: send activation code reply to upper layer
                         return Ok(None);
                     },
                     _ => {

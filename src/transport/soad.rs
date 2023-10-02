@@ -73,7 +73,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
             ));
         }
 
-        debug!("Connecting to server!");
+        debug!("Connecting to server! {}", dest_addr);
         let stream = TcpStream::connect(dest_addr)?;
 
         // Create an Arc wrapping the TcpStream to share ownership between threads

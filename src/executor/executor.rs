@@ -3,6 +3,8 @@ use std::io::{self, Error, ErrorKind};
 use std::sync::{Arc, Mutex};
 use serde_json::Value;
 use utils;
+use rand::Rng;
+
 use crate::transport;
 use crate::executor::parameters::SequenceItem;
 
@@ -39,13 +41,19 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                         "connect" => {
                             match stream.connect() {
                                 Ok(()) => debug!("Connected successfully!"),
-                                Err(err) => eprintln!("Failed to connect: {}", err),
+                                Err(err) => {
+                                    eprintln!("Failed to connect: {}", err);
+                                    return Err(err);
+                                }
                             }
                         }
                         "disconnect" => {
                             match stream.disconnect() {
                                 Ok(()) => debug!("Disconnected successfully!"),
-                                Err(err) => eprintln!("Failed to disconnect: {}", err),
+                                Err(err) => {
+                                    eprintln!("Failed to disconnect: {}", err);
+                                    return Err(err);
+                                }
                             }
                         }
                         _ => eprintln!("Invalid single action format: {}", single_action_str),
@@ -71,12 +79,18 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                         "activation" => {
                             match stream.send_doip_routing_activation() {
                                 Ok(()) => debug!("Send doip successfully!"),
-                                Err(err) => eprintln!("Failed to send doip activation: {}", err),
+                                Err(err) => {
+                                    eprintln!("Failed to send doip activation: {}", err);
+                                    return Err(err);
+                                }
                             }
                             match stream.receive_doip(timeout) {
                                 Ok(Some(data)) => debug!("Receive doip data {:?} successfully!", data),
                                 Ok(None) => debug!("Receive doip successfully!"),
-                                Err(err) => eprintln!("Failed to Receive doip activation: {}", err),
+                                Err(err) => {
+                                    eprintln!("Failed to Receive doip activation: {}", err);
+                                    return Err(err);
+                                }
                             }
                         }
                         _ => eprintln!("Invalid single action format: {}", single_action_str),
@@ -97,29 +111,7 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
             match &item.action {
                 Value::String(single_action_str) => {
                     match single_action_str.as_str() {
-                        _ => {
-                            let actions: Vec<u8> = single_action_str
-                                .chars()
-                                .collect::<Vec<char>>()
-                                .chunks(2)
-                                .map(|chunk| {
-                                    let hex_str: String = chunk.iter().collect();
-                                    u8::from_str_radix(&hex_str, 16).unwrap_or(0)
-                                })
-                                .collect();
-                            // Now 'actions' contains the parsed Vec<u8>
-                            let hex_actions: Vec<String> = actions.iter().map(|&x| format!("0x{:02X}", x)).collect();
-                            println!("Parsed signle action: {:?}", hex_actions);
-                            let u8_actions = utils::common::hex_strings_to_u8(&hex_actions);
-                            match stream.send_diag(u8_actions) {
-                                Ok(()) => debug!("Send diag successfully!"),
-                                Err(err) => eprintln!("Failed to send diag activation: {}", err),
-                            }
-                            match stream.receive_diag(timeout) {
-                                Ok(data) => debug!("Receive diag data {:?} successfully!", data),
-                                Err(err) => eprintln!("Failed to Receive diag activation: {}", err),
-                            }
-                        }
+                        _ => debug!("Please use action&expect of send_diag format like this: [\"1001\"]")
                     }
                 }
                 Value::Array(multiple_actions) => {
@@ -195,6 +187,123 @@ pub fn execute_cmd(&mut self, item: SequenceItem) -> Result<(), io::Error> {
                 }
             }
         }
+        s if s.starts_with("securityaccess_") => {
+            // Extract the number after "securityaccess_"
+            if let Ok(level) = s[15..].parse::<u8>() {
+                debug!("Security Access level: {}", level);
+                let mut rng = rand::thread_rng();
+                //get parameter of secure-access in action item
+                let message_id: u16 = 0x0001;
+                let authentication_method: u16 = 0x0001;
+                let mut algorithm = "";
+                let mut iv: &str = "";
+                let mut clientkey = "";
+                let mut serverkey = "";
+                match &item.action {
+                    Value::Array(multiple_actions) => {
+                        //get security-access parameters in action item
+                        for action_str in multiple_actions.iter() {
+                            if let Some(action) = action_str.as_str() {
+                                let parts: Vec<&str> = action.split(':').collect();
+                                if parts.len() == 2 {
+                                    match parts[0] {
+                                        "algorithm" => algorithm = parts[1],
+                                        "iv" => iv = parts[1],
+                                        "clientkey" => clientkey = parts[1],
+                                        "serverkey" => serverkey = parts[1],
+                                        _ => (),
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        eprintln!("Not enough parameters");
+                        return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                    }
+                }
+                let specified_bytes: [u8; 6] = [0x27, level, (message_id & 0xFF) as u8, ((message_id >> 8) & 0xFF) as u8, (authentication_method & 0xFF) as u8, ((authentication_method >> 8) & 0xFF) as u8];
+                let mut byte_array: Vec<u8> = Vec::with_capacity(52);
+                byte_array.extend_from_slice(&specified_bytes);
+                if algorithm == "AES-128-CMAC" {
+                    if iv == "random" {
+                        let mut iv_bytes: [u8; 16] = [0; 16];
+                        for i in 0..iv_bytes.len() {
+                            iv_bytes[i] = rng.gen::<u8>();
+                        }
+                        //add iv
+                        byte_array.extend_from_slice(&iv_bytes);
+
+                        //TODO: calculate encrypted_data_record and authentication_data
+                        // Generating 46 random bytes
+                        let mut random_bytes: [u8; 16] = [0; 16];
+                        for i in 0..random_bytes.len() {
+                            random_bytes[i] = rng.gen::<u8>();
+                        }
+
+                        match utils::excrypto::encrypt_aes128_ctr(&random_bytes, &iv_bytes, clientkey) {
+                            Ok(encrypted_data_record) => {
+                                debug!("Secure-access ctr Encrypted data: {:?}", encrypted_data_record);
+                                let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
+                                //add encrypted_data_record
+                                byte_array.extend_from_slice(&encrypted_first_16_bytes);
+                            }
+                            Err(error) => {
+                                eprintln!("Encryption error: {}", error);
+                            }
+                        }
+
+                        match utils::excrypto::encrypt_aes128_cmac(&random_bytes, serverkey) {
+                            Ok(encrypted_data_record) => {
+                                debug!("Secure-access cmac Encrypted data: {:?}", encrypted_data_record);
+                                let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
+                                //add encrypted_data_record
+                                byte_array.extend_from_slice(&encrypted_first_16_bytes);
+                            }
+                            Err(error) => {
+                                eprintln!("Encryption error: {}", error);
+                            }
+                        }
+                    }
+                }
+
+                // Send ClientRequestSeed
+                match stream.send_diag(byte_array) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        eprintln!("Failed to send diag Secure access: {}", err);
+                        return Err(err);
+                    }
+                }
+                match &item.expect {
+                    Value::Array(multiple_expects) => {
+                        //get security-access parameters in expect item
+                        for expect_str in multiple_expects.iter() {
+                            if let Some(expect) = expect_str.as_str() {
+                                match stream.receive_diag(timeout) {
+                                    Ok(data) => {
+                                        debug!("Sent secure-access, Expect: {}, Receive {:?}", expect_str, data);
+                                        if utils::common::compare_expect_value(expect, data) == false {
+                                            return Err(Error::new(ErrorKind::InvalidData, "secure-access Diag data received is not expected"));
+                                        }
+                                    }
+                                    Err(err) => {
+                                        return Err(err);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {
+                        eprintln!("Not enough parameters");
+                        return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                    }
+                }
+            } else {
+                println!("Invalid SA format: {}", s);
+            }
+        }
+        "swdl" => {debug!("not support now")}
         _ => println!("This action name is not supported"),
     }
     Ok(())
