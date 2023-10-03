@@ -7,6 +7,7 @@ use utils;
 use crate::transport;
 use crate::executor::parameters::SequenceItem;
 use crate::executor::securityaccess;
+use crate::executor::swdl;
 
 pub struct Executor {
     s_diag_obj: Arc<Mutex<transport::diag::Diag>>,
@@ -204,7 +205,37 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                 return Err(Error::new(ErrorKind::InvalidInput, "Invalid security name format"));
             }
         }
-        "swdl" => {debug!("not support now")}
+        "swdl" => {
+            let mut sw_file_path = "";
+            let mut format = "";
+            match &item.action {
+                Value::Array(multiple_actions) => {
+                    //get swdl parameters in action item
+                    for action_str in multiple_actions.iter() {
+                        if let Some(action) = action_str.as_str() {
+                            let parts: Vec<&str> = action.split(':').collect();
+                            if parts.len() == 2 {
+                                match parts[0] {
+                                    "path" => sw_file_path = parts[1],
+                                    "format" => format = parts[1],
+                                    _ => (),
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("Not enough parameters");
+                    return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                }
+            }
+            if format == "vbf" {
+                match swdl::parse_vbf(sw_file_path.to_string()) {
+                    Ok(()) => {}
+                    Err(err) => return Err(err)
+                }
+            }
+        }
         _ => println!("This action name is not supported"),
     }
     Ok(())

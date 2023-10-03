@@ -29,8 +29,8 @@ use utils;
     let authentication_method_bytes: [u8; 2] = [0x00, 0x01];
     let mut algorithm = "";
     let mut iv: &str = "";
-    let mut clientkey = "";
-    let mut serverkey = "";
+    let mut encryption_authentication_key = "";
+    let mut proof_of_ownership_key = "";
     let mut res_seed_message: Vec<u8> = Vec::new();
     match &item.action {
         Value::Array(multiple_actions) => {
@@ -42,8 +42,8 @@ use utils;
                         match parts[0] {
                             "algorithm" => algorithm = parts[1],
                             "iv" => iv = parts[1],
-                            "clientkey" => clientkey = parts[1],
-                            "serverkey" => serverkey = parts[1],
+                            "encryption_authentication_key" => encryption_authentication_key = parts[1],
+                            "proof_of_ownership_key" => proof_of_ownership_key = parts[1],
                             _ => (),
                         }
                     }
@@ -83,13 +83,13 @@ use utils;
         }
 
         //Create Request seed packet
-        match utils::excrypto::encrypt_aes128_ctr(&client_random_number, &iv_bytes, clientkey) {
+        match utils::excrypto::encrypt_aes128_ctr(&client_random_number, &iv_bytes, encryption_authentication_key) {
             Ok(encrypted_data_record) => {
                 let encrypted_first_16_bytes: Vec<u8> = encrypted_data_record.iter().take(16).cloned().collect();
                 //add encrypted_data_record
                 byte_array.extend_from_slice(&encrypted_first_16_bytes);
 
-                match utils::excrypto::encrypt_aes128_cmac(&byte_array, clientkey) {
+                match utils::excrypto::encrypt_aes128_cmac(&byte_array, encryption_authentication_key) {
                     Ok(authentication_data) => {
                         let authentication_data_first_16_bytes: Vec<u8> = authentication_data.iter().take(16).cloned().collect();
                         //add authentication_data
@@ -146,15 +146,14 @@ use utils;
     // Get the index before the last 16 bytes
     let last_16_bytes_index = res_seed_message.len().saturating_sub(16);
     let server_payload_bytes: Vec<u8> = res_seed_message[0..last_16_bytes_index].to_vec();
-    if utils::excrypto::verify_aes128_cmac(server_payload_bytes.as_slice(), server_authentication_code_bytes, clientkey) == false {
+    if utils::excrypto::verify_aes128_cmac(server_payload_bytes.as_slice(), server_authentication_code_bytes, encryption_authentication_key) == false {
         return Err(Error::new(ErrorKind::InvalidData, "SecurityAccess fail authentication"));
     }
     let iv_bytes: Vec<u8> = server_payload_bytes[4..20].to_vec();
     let encrypted_data: Vec<u8> = server_payload_bytes[20..52].to_vec();
-    match utils::excrypto::decrypt_aes128_ctr(encrypted_data.as_slice(), &iv_bytes, clientkey) {
+    //verity server_proof_of_ownership, use proof_of_ownership_key
+    match utils::excrypto::decrypt_aes128_ctr(encrypted_data.as_slice(), &iv_bytes, encryption_authentication_key) {
         Ok(decrypted_data) => {
-            //TODO: verity server_proof_of_ownership, use serverkey
-            //do it here
             let server_random_number: Vec<u8> = decrypted_data[0..16].to_vec();
             let mut random_numbers: Vec<u8> = Vec::new();
             //server_random_number || server_proof_of_ownership
@@ -179,7 +178,7 @@ use utils;
             byte_array.extend_from_slice(&rand_iv_bytes);
             //calculate client_proof_of_ownership
             let mut client_proof_of_ownership: Vec<u8> = Vec::new();
-            match utils::excrypto::encrypt_aes128_cmac(&random_numbers, serverkey) {
+            match utils::excrypto::encrypt_aes128_cmac(&random_numbers, proof_of_ownership_key) {
                 Ok(encrypted_data) => {
                     client_proof_of_ownership.extend(&encrypted_data);
                 }
@@ -189,12 +188,12 @@ use utils;
                 }
             }
             //calculate encrypted_data_record for Client_Send_Key
-            match utils::excrypto::encrypt_aes128_ctr(&client_proof_of_ownership, &rand_iv_bytes, clientkey) {
+            match utils::excrypto::encrypt_aes128_ctr(&client_proof_of_ownership, &rand_iv_bytes, encryption_authentication_key) {
                 Ok(encrypted_data_record) => {
                     debug!("Secure-access ctr encrypted_data_record: {:?}", encrypted_data_record);
                     //add encrypted_data_record
                     byte_array.extend_from_slice(&encrypted_data_record);
-                    match utils::excrypto::encrypt_aes128_cmac(&byte_array, clientkey) {
+                    match utils::excrypto::encrypt_aes128_cmac(&byte_array, encryption_authentication_key) {
                         Ok(authentication_data) => {
                             let authentication_data_first_16_bytes: Vec<u8> = authentication_data.iter().take(16).cloned().collect();
                             //add authentication_data
@@ -247,7 +246,7 @@ use utils;
 
         }
         Err(err) => {
-            eprintln!("Decryption error: {}", err);
+            eprintln!("Fail to verify server_proof_of_ownership, Decryption error: {}", err);
             return Err(err);
         }
     }

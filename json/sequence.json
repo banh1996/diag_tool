@@ -39,14 +39,14 @@
         },
         {
             "name": "securityaccess_05",
-            "action": ["algorithm:AES128", "iv:random", "clientkey:ffffffffffffffffffffffffffffffff", "serverkey:ffffffffffffffffffffffffffffffff"],
+            "action": ["algorithm:AES128", "iv:random", "encryption_authentication_key:ffffffffffffffffffffffffffffffff", "proof_of_ownership_key:ffffffffffffffffffffffffffffffff"],
             "expect": ["67*"],
             "timeout": "2s",
             "fail": "fail_handler"
         },
         {
             "name": "swdl",
-            "action": "/path/to/A.vbf",
+            "action": ["path:/path/to/A.vbf", "format:vbf"],
             "expect": [""],
             "timeout": "",
             "fail": "fail_handler"
