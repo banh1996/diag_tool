@@ -6,7 +6,7 @@ use std::fs::File;
 
 fn extract_erase_values(erase_content: &str) -> (String, String) {
     let mut erase_start_addr = String::new();
-    let mut erase_end_addr = String::new();
+    let mut erase_length_addr = String::new();
     let mut lines = erase_content.lines();
     if let Some(start_addr_line) = lines.next() {
         let start_addr_parts: Vec<&str> = start_addr_line
@@ -18,13 +18,13 @@ fn extract_erase_values(erase_content: &str) -> (String, String) {
                 .trim_matches(&['{', '}', ' ', '\n', '\t', '\r', '\x0c', ';'][..])
                 .trim_start_matches("0x")
                 .to_string();
-            erase_end_addr = start_addr_parts[1]
+            erase_length_addr = start_addr_parts[1]
                 .trim_matches(&['{', '}', ' ', '\n', '\t', '\r', '\x0c', ';'][..])
                 .trim_start_matches("0x")
                 .to_string();
         }
     }
-    (erase_start_addr, erase_end_addr)
+    (erase_start_addr, erase_length_addr)
 }
 
 fn extract_value(contents: &str, field: &str) -> String {
@@ -101,7 +101,7 @@ pub fn parse_vbf(sw_filename: String) -> Result<(), io::Error> {
         let ecu_address = extract_value(&header_content, "ecu_address");
         let data_format_identifier = extract_value(&header_content, "data_format_identifier");
         let erase = extract_value(&header_content, "erase");
-        let (erase_start_addr, erase_end_addr) = extract_erase_values(&erase);
+        let (erase_start_addr, erase_length_addr) = extract_erase_values(&erase);
         let verification_block_start = extract_value(&header_content, "verification_block_start");
         let verification_block_length = extract_value(&header_content, "verification_block_length");
         let verification_block_root_hash = extract_value(&header_content, "verification_block_root_hash");
@@ -114,14 +114,13 @@ pub fn parse_vbf(sw_filename: String) -> Result<(), io::Error> {
         debug!("sw_part_type: {:?}", sw_part_type);
         debug!("ecu_address: {:?}", ecu_address);
         debug!("data_format_identifier: {:?}", data_format_identifier);
-        debug!("erase_end_addr: {:?}", erase_end_addr);
         debug!("erase_start_addr: {:?}", erase_start_addr);
+        debug!("erase_length_addr: {:?}", erase_length_addr);
         debug!("verification_block_start: {:?}", verification_block_start);
         debug!("verification_block_length: {:?}", verification_block_length);
         debug!("verification_block_root_hash: {:?}", verification_block_root_hash);
         debug!("sw_signature_dev: {:?}", sw_signature_dev);
         debug!("file_checksum: {:?}", file_checksum);
-
     } else {
         debug!("Invalid header format in the file.");
     }
