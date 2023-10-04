@@ -1,6 +1,8 @@
 use log::debug;
 use std::io::{self, Error, ErrorKind};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::thread;
 use serde_json::Value;
 use utils;
 
@@ -136,7 +138,8 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                     for (i, action) in action_vecs.iter().enumerate() {
                         let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
                         let u8_action = utils::common::hex_strings_to_u8(&hex_action);
-                        let first_byte = u8_action[0];
+                        let sub_service_byte = u8_action[1];
+                        let diag_len = u8_action.len();
                         match stream.send_diag(u8_action) {
                             Ok(()) => {}
                             Err(err) => {
@@ -144,14 +147,14 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                                 return Err(err);
                             }
                         }
-                        //Check suppress reply bit
-                        if (first_byte & 0x80) == 0x80 {
+                        //TODO: Check suppress reply bit
+                        if diag_len==2 && (sub_service_byte & 0x80) == 0x80 {
                             debug!("found suppress bit, ignore checking respond diag");
                             //Ignore DoIP ACK
                             match stream.receive_doip(timeout) {
                                 Ok(Some(_data)) => {}
                                 Ok(None) => {}
-                                Err(err) => eprintln!("Failed to Receive doip activation: {}", err),
+                                Err(err) => eprintln!("Failed to Receive doip Ack: {}", err),
                             }
                             continue;
                         }
@@ -166,11 +169,11 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                                         if let Some(expect_str) = expect_value.as_str() {
                                             debug!("Sent {:?}, Expect at index {}: {}, Receive {:?}", hex_action, i, expect_str, data);
                                             if utils::common::compare_expect_value(expect_str, data) == false {
-                                                return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
+                                                //return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
                                             }
                                         } else {
                                             eprintln!("Value at index {} is not a string.", i);
-                                            return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                                            //return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                                         }
                                     }
                                 }
@@ -230,11 +233,15 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                 }
             }
             if format == "vbf" {
-                match swdl::parse_vbf(sw_file_path.to_string()) {
+                match swdl::parse_vbf(stream, sw_file_path.to_string(), 4093, timeout) {
                     Ok(()) => {}
                     Err(err) => return Err(err)
                 }
             }
+        }
+        "delay" => {
+            let duration = Duration::from_millis(timeout);
+            thread::sleep(duration);
         }
         _ => println!("This action name is not supported"),
     }

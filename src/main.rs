@@ -8,6 +8,8 @@ extern crate cmac;
 extern crate aes;
 extern crate cipher;
 extern crate ctr;
+extern crate hex;
+
 // use std::thread;
 use log::debug;
 use std::env;

@@ -32,23 +32,100 @@
         },
         {
             "name": "send_diag",
-            "action": ["31010206",  "22f186",  "82"],
-            "expect": ["71010206*", "62f186*", "*"],
+            "action": ["31010206",  "22f186"  ],
+            "expect": ["71010206*", "62f186*"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
         {
-            "name": "securityaccess_05",
-            "action": ["algorithm:AES128", "iv:random", "encryption_authentication_key:ffffffffffffffffffffffffffffffff", "proof_of_ownership_key:ffffffffffffffffffffffffffffffff"],
+            "name": "send_diag",
+            "action": ["1002"],
+            "expect": ["5002*"],
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "delay",
+            "action": "",
+            "expect": "",
+            "timeout": "3s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "send_diag",
+            "action": [ "22f186",  "1002" ],
+            "expect": [  "62f186*", "5002" ],
+            "timeout": "1s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "delay",
+            "action": "",
+            "expect": "",
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "send_diag",
+            "action": ["22f186", "22eda0",  "22ed20", "1082"],
+            "expect": ["62f186*","62eda0*", "62ed20*", "*"],
+            "timeout": "1s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "delay",
+            "action": "",
+            "expect": "",
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "send_diag",
+            "action": [ "22f186",  "1002" ],
+            "expect": [  "62f186*", "5002" ],
+            "timeout": "1s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "delay",
+            "action": "",
+            "expect": "",
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "securityaccess_01",
+            "action": ["algorithm:AES128", "iv:random", "encryption_authentication_key:55555555555555555555555555555555", "proof_of_ownership_key:55555555555555555555555555555555"],
             "expect": ["67*"],
+            "timeout": "2s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "swdl",
+            "action": ["path:sbl.vbf", "format:vbf"],
+            "expect": [""],
+            "timeout": "15s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "send_diag",
+            "action": [ "3101030170100000" ],
+            "expect": [  "71010301*" ],
+            "timeout": "1s",
+            "fail": "fail_handler"
+        },
+        {
+            "name": "delay",
+            "action": "",
+            "expect": "",
             "timeout": "2s",
             "fail": "fail_handler"
         },
         {
             "name": "swdl",
-            "action": ["path:/path/to/A.vbf", "format:vbf"],
+            "action": ["path:test.vbf", "format:vbf"],
             "expect": [""],
-            "timeout": "",
+            "timeout": "15s",
             "fail": "fail_handler"
         },
         {

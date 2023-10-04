@@ -278,6 +278,8 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                 };
 
                 if header.length != payload.len() as u32 {
+                    let hex_string: String = payload_bytes.iter().map(|b| format!("{:02X}", b)).collect();
+                    debug!("Doip Received: {:?}\nheader.length: {}\npayload.len: {}", hex_string, header.length, payload.len());
                     return Err(Error::new(ErrorKind::InvalidData, "DoIp Length invalid"));
                 }
 

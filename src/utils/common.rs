@@ -1,3 +1,5 @@
+use hex;
+
 /*****************************************************************************************************************
  *  utils::common::parse_duration_to_milliseconds function
  *  brief      Function to convert time string to integer milliseconds
@@ -82,4 +84,9 @@ pub fn compare_expect_value(string_a: &str, vec_b: Vec<u8>) -> bool {
     }
 
     true
+}
+
+pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, hex::FromHexError> {
+    let hex_string_without_prefix = hex_string.trim_start_matches("0x");
+    hex::decode(hex_string_without_prefix)
 }
