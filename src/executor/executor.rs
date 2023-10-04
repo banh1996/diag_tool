@@ -102,6 +102,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                         };
                                         thread::spawn(move || {
                                             // start tester-present
+                                            debug!("Start tester-present");
                                             loop {
                                                 {
                                                     let mu_self_obj = clone_self_obj.lock().unwrap();
@@ -161,7 +162,11 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     let mut action_vecs: Vec<Vec<u8>> = Vec::new();
                     for action_str in multiple_actions.iter() {
                         if let Some(action) = action_str.as_str() {
-                            let parsed_action: Vec<u8> = action
+                            // let trimmed_action = action.trim_matches(|c: char| {
+                            //     c == '{' || c == '}' || c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\x0c' || c == ';'
+                            // });
+                            let trimmed_value = action.replace(" ", "");
+                            let parsed_action: Vec<u8> = trimmed_value
                                 .chars()
                                 .collect::<Vec<char>>()
                                 .chunks(2)
@@ -177,6 +182,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     for (i, action) in action_vecs.iter().enumerate() {
                         let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
                         let u8_action = utils::common::vec_hex_strings_to_u8(&hex_action);
+                        let clone_u8_action = u8_action.clone();
                         let sub_service_byte = u8_action[1];
                         let diag_len = u8_action.len();
                         match stream.send_diag(u8_action) {
@@ -206,7 +212,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                         let expect_value = &expect_array[i];
                                         // Check if the value is a string
                                         if let Some(expect_str) = expect_value.as_str() {
-                                            debug!("{:?} ",  format!("Sent {:?}, Expect at index {}: {}, Received {:02X?}", hex_action, i, expect_str, data));
+                                            debug!("{:?} ",  format!("Sent {:02X?}, Expect at index {}: {}, Received {:02X?}", clone_u8_action, i, expect_str, data));
                                             if utils::common::compare_expect_value(expect_str, data) == false {
                                                 return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
                                             }

@@ -15,7 +15,7 @@ lazy_static::lazy_static! {
     static ref G_IS_INIT_SOCKET: AtomicBool = AtomicBool::new(false);
     static ref RECEIVE_TIMEOUT: usize = 100; //default
 }
-const BUFFER_SIZE: usize = 1024; //default
+const BUFFER_SIZE: usize = 4100; //default
 /* end define */
 
 

@@ -149,7 +149,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
         }
         match stream.receive_diag(timeout) {
             Ok(data) => {
-                debug!("Sent erase, Expect: {}, Receive {:?}", "74*", data);
+                debug!("Sent erase, Expect: {}, Receive {:02X?}", "74*", data);
                 if utils::common::compare_expect_value("7101ff00*", data) == false {
                     return Err(Error::new(ErrorKind::InvalidData, "erase Diag data received is not expected"));
                 }
@@ -187,7 +187,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
         }
         match stream.receive_diag(timeout) {
             Ok(data) => {
-                debug!("Sent Request Data Download, Expect: {}, Receive {:?}", "74*", data);
+                debug!("Sent Request Data Download, Expect: {}, Receive {:02X?}", "74*", data);
                 if utils::common::compare_expect_value("74*", data) == false {
                     return Err(Error::new(ErrorKind::InvalidData, "request-download Diag data received is not expected"));
                 }
@@ -244,7 +244,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
         }
         match stream.receive_diag(timeout) {
             Ok(data) => {
-                debug!("Sent transfer-exit, Expect: {}, Receive {:?}", "77*", data);
+                debug!("Sent transfer-exit, Expect: {}, Receive {:02X?}", "77*", data);
                 if utils::common::compare_expect_value("77*", data) == false {
                     return Err(Error::new(ErrorKind::InvalidData, "request-download Diag data received is not expected"));
                 }
@@ -280,7 +280,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
     }
     match stream.receive_diag(timeout) {
         Ok(data) => {
-            debug!("Sent check_memory, Expect: {}, Receive {:?}", "74*", data);
+            debug!("Sent check_memory, Expect: {}, Receive {:02X?}", "74*", data);
             if utils::common::compare_expect_value("710102121000*", data) == false {
                 return Err(Error::new(ErrorKind::InvalidData, "check memory Diag data received is failed"));
             }

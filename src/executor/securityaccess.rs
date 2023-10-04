@@ -124,7 +124,7 @@ use utils;
                     match stream.receive_diag(timeout) {
                         Ok(data) => {
                             let data_cloned = data.clone();
-                            debug!("Sent secure-access, Expect: {}, Receive {:?}", expect_str, data);
+                            debug!("Sent secure-access, Expect: {}, Receive {:02X?}", expect_str, data);
                             if utils::common::compare_expect_value(expect, data) == false {
                                 return Err(Error::new(ErrorKind::InvalidData, "secure-access Diag data received is not expected"));
                             }
@@ -214,7 +214,7 @@ use utils;
                                         if let Some(expect) = expect_str.as_str() {
                                             match stream.receive_diag(timeout) {
                                                 Ok(data) => {
-                                                    debug!("Sent secure-access, Expect: {}, Receive {:?}", expect_str, data);
+                                                    debug!("Sent secure-access, Expect: {}, Receive {:02X?}", expect_str, data);
                                                     if utils::common::compare_expect_value(expect, data) == false {
                                                         return Err(Error::new(ErrorKind::InvalidData, "secure-access Diag data received is not expected"));
                                                     }
