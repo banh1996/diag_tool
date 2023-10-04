@@ -40,57 +40,17 @@
         {
             "name": "delay",
             "action": "",
-            "description": "delay",
+            "description": "delay 7 seconds",
             "expect": "",
-            "timeout": "3s",
+            "timeout": "7s",
             "fail": "fail_handler"
         },
 		{
             "name": "send_diag",
-            "action": [ "22f186",  "1002" ],
-            "description": "diag: request to programming session",
-            "expect": [  "62f186*", "5002" ],
-            "timeout": "1s",
-            "fail": "fail_handler"
-        },
-		{
-            "name": "delay",
-            "action": "",
-            "description": "delay",
-            "expect": "",
-            "timeout": "2s",
-            "fail": "fail_handler"
-        },
-		{
-            "name": "send_diag",
-            "action": ["22f186", "22eda0",  "22ed20"],
+            "action": ["1002", "22f186", "22eda0",  "22ed20"],
             "description": "diag: read data by identifier",
-            "expect": ["62f186*","62eda0*", "62ed20*"],
+            "expect": ["5002", "62f186*","62eda0*", "62ed20*"],
             "timeout": "1s",
-            "fail": "fail_handler"
-        },
-		{
-            "name": "delay",
-            "action": "",
-            "description": "delay",
-            "expect": "",
-            "timeout": "2s",
-            "fail": "fail_handler"
-        },
-		{
-            "name": "send_diag",
-            "action": [ "22f186",  "1002" ],
-            "description": "diag: read data by identifier & request to programming session",
-            "expect": [  "62f186*", "5002" ],
-            "timeout": "1s",
-            "fail": "fail_handler"
-        },
-		{
-            "name": "delay",
-            "action": "",
-            "description": "delay",
-            "expect": "",
-            "timeout": "2s",
             "fail": "fail_handler"
         },
         {
@@ -119,7 +79,7 @@
         },
         {
             "name": "delay",
-            "action": "",
+            "action": "wait for activating SBL",
             "description": "delay",
             "expect": "",
             "timeout": "2s",
