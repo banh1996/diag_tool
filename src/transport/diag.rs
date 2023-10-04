@@ -185,7 +185,7 @@ pub fn receive_diag(&mut self, timeout: u64) -> Result<Vec<u8>, io::Error> {
                 match doip::receive_doip(stream, timeout) {
                     Ok(Some(data)) => {
                         // Process the received data
-                        debug!("Received diag {} bytes: {:?}", data.len(), data);
+                        debug!("Received diag with len: {}, data: {:02X?}", data.len(), data);
                         if data.len() == 3 && data[0] == 0x7f && data[2] == 0x78 { //pending diag
                             continue;
                         }

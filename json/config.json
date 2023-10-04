@@ -11,7 +11,7 @@
         "version": "0x2",
         "inverse_version": "0xfd",
         "tester_addr": "0x0e80",
-        "ecu_addr": "0x1d0d",
+        "ecu_addr": "0x1d88",
         "sga_addr": "0x1d24",
         "activation_code": "0"
     }

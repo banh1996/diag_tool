@@ -115,7 +115,6 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                                         }
                                                     }
                                                     //suppress reply bit, ignore receive diag data, receive doip ACK
-                                                    // debug!("found suppress bit, ignore checking respond diag");
                                                     match mu_diag_obj.receive_doip(1000) {
                                                         Ok(Some(_data)) => {}
                                                         Ok(None) => {}
@@ -124,7 +123,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                                             break;
                                                         }
                                                     };
-                                                } //drop/unlock mu_self_obj and mu_diag_obj
+                                                } //drop-unlock mu_self_obj and mu_diag_obj
                                                 thread::sleep(Duration::from_millis(interval));
                                             }
                                         });
@@ -207,7 +206,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                         let expect_value = &expect_array[i];
                                         // Check if the value is a string
                                         if let Some(expect_str) = expect_value.as_str() {
-                                            debug!("Sent {:?}, Expect at index {}: {}, Receive {:?}", hex_action, i, expect_str, data);
+                                            debug!("{:?} ",  format!("Sent {:?}, Expect at index {}: {}, Received {:02X?}", hex_action, i, expect_str, data));
                                             if utils::common::compare_expect_value(expect_str, data) == false {
                                                 return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
                                             }
@@ -217,7 +216,6 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                         }
                                     }
                                 }
-                                // debug!("Receive diag data {:?} successfully! {}", data, utils::common::check_expect(&item.expect.as_str(), data));
                             }
                             Err(err) => {
                                 return Err(err);
