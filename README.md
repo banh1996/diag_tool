@@ -17,12 +17,12 @@ cargo build
 ## <span style="color: green;">TODO list</span>
 
 <summary><s>Work well in Linux</s></summary>
-<summary>Work well in Window</summary>
+<summary><s>Work well in Window</s></summary>
 <summary><s>Parse json configuration file</s></summary>
-<summary>Check json configuration parameters before execute</summary>
+<summary><s>Check json configuration parameters before execute</s></summary>
 <summary><s>Parse json sequence file</s></summary>
 <summary>Check json sequence parameters before execute</summary>
-<summary>full-sequence for SWDL</summary>
+<summary><s>full-sequence for SWDL</s></summary>
 <summary>Support SWDL for hex, S37, vbf format</summary>
 <summary>Lock json folder by password to protect sensitive data (OEM keys)</summary>
 <summary>Execute CLI cmd from terminal (send diag cmd)</summary>

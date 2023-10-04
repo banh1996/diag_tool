@@ -25,13 +25,6 @@
         },
         {
             "name": "send_diag",
-            "action": ["1001", "22f186"],
-            "expect": ["5001*", "62f186*"],
-            "timeout": "1s",
-            "fail": "fail_handler"
-        },
-        {
-            "name": "send_diag",
             "action": ["31010206",  "22f186"  ],
             "expect": ["71010206*", "62f186*"],
             "timeout": "1s",
@@ -67,8 +60,8 @@
         },
 		{
             "name": "send_diag",
-            "action": ["22f186", "22eda0",  "22ed20", "1082"],
-            "expect": ["62f186*","62eda0*", "62ed20*", "*"],
+            "action": ["22f186", "22eda0",  "22ed20"],
+            "expect": ["62f186*","62eda0*", "62ed20*"],
             "timeout": "1s",
             "fail": "fail_handler"
         },
@@ -123,9 +116,23 @@
         },
         {
             "name": "swdl",
-            "action": ["path:test.vbf", "format:vbf"],
+            "action": ["path:cal.vbf", "format:vbf"],
             "expect": [""],
             "timeout": "15s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "swdl",
+            "action": ["path:app.vbf", "format:vbf"],
+            "expect": [""],
+            "timeout": "15s",
+            "fail": "fail_handler"
+        },
+		{
+            "name": "send_diag",
+            "action": [ "31010205", "1101" ],
+            "expect": [  "71010205*", "5101" ],
+            "timeout": "1s",
             "fail": "fail_handler"
         },
         {

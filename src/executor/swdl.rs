@@ -185,7 +185,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
         }
         match stream.receive_diag(timeout) {
             Ok(data) => {
-                debug!("Sent secure-access, Expect: {}, Receive {:?}", "74*", data);
+                debug!("Sent Request Data Download, Expect: {}, Receive {:?}", "74*", data);
                 if utils::common::compare_expect_value("74*", data) == false {
                     return Err(Error::new(ErrorKind::InvalidData, "request-download Diag data received is not expected"));
                 }
@@ -206,7 +206,11 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
             let mut data_blocks = Vec::with_capacity(data_len as usize);
             data_file.take(data_len as u64).read_to_end(&mut data_blocks)?;
             let mut byte_vector: Vec<u8> = vec![0x36, block_seq_num];
-            block_seq_num += 1;
+            if block_seq_num == 255 {
+                block_seq_num = 0;
+            } else {
+                block_seq_num += 1;
+            }
             byte_vector.extend_from_slice(&data_blocks);
             match stream.send_diag(byte_vector) {
                 Ok(()) => {}
@@ -217,7 +221,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
             }
             match stream.receive_diag(timeout) {
                 Ok(data) => {
-                    debug!("Sent secure-access, Expect: {}, Receive {:?}", "76*", data);
+                    debug!("Sent diag transfer-block {}, Expect: 76*, Receive {:?}", block_seq_num, data);
                     if utils::common::compare_expect_value("76*", data) == false {
                         return Err(Error::new(ErrorKind::InvalidData, "request-download Diag data received is not expected"));
                     }
@@ -238,7 +242,7 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
         }
         match stream.receive_diag(timeout) {
             Ok(data) => {
-                debug!("Sent secure-access, Expect: {}, Receive {:?}", "77*", data);
+                debug!("Sent transfer-exit, Expect: {}, Receive {:?}", "77*", data);
                 if utils::common::compare_expect_value("77*", data) == false {
                     return Err(Error::new(ErrorKind::InvalidData, "request-download Diag data received is not expected"));
                 }
