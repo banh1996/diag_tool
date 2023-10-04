@@ -4,8 +4,6 @@ use log::debug;
 use std::fs::File;
 use utils;
 
-//TODO: parse header and send sw data
-
 fn extract_erase_values(erase_content: &str) -> (String, String) {
     let mut erase_start_addr = String::new();
     let mut erase_length_addr = String::new();
@@ -61,7 +59,11 @@ fn extract_value(contents: &str, field: &str) -> String {
 pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
                 sw_filename: String, max_buffer_len: u32, timeout: u64) -> Result<(), io::Error> {
     // Open the file and read its content
-    let mut file = File::open(sw_filename)?;
+    let sw_filename_clone = sw_filename.clone();
+    let mut file = match File::open(sw_filename) {
+        Ok(file) => file,
+        Err(error) => return Err(error),
+    };
     let mut header_content = String::new();
     let mut brace_count = 0;
     let mut inside_header = false;
@@ -287,6 +289,8 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
             return Err(err);
         }
     }
+
+    debug!("Flashed {} successfully", sw_filename_clone);
 
     Ok(())
 }

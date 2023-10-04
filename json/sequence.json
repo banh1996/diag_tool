@@ -1,17 +1,14 @@
 {
     "parameter": {
         "vin": "",
-        "algorithm": "AES-128-CMAC",
-        "key_lv1": "0x12345678123456781234567812345678",
-        "key_lv2": "",
-        "key_lv3": "",
-        "key_lv4": "",
-        "tester_present": true
+        "tester_present": true,
+        "tester_present_interval": "2s"
     },
     "sequence": [
         {
             "name": "socket",
             "action": "connect",
+            "description": "connect to ECU",
             "expect": "0",
             "timeout": "3s",
             "fail": "fail_handler"
@@ -19,6 +16,7 @@
         {
             "name": "send_doip",
             "action": "activation",
+            "description": "connect to ECU",
             "expect": "10",
             "timeout": "500ms",
             "fail": "fail_handler"
@@ -26,6 +24,7 @@
         {
             "name": "send_diag",
             "action": ["31010206",  "22f186"  ],
+            "description": "diag: read data by identifier",
             "expect": ["71010206*", "62f186*"],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -33,6 +32,7 @@
         {
             "name": "send_diag",
             "action": ["1002"],
+            "description": "diag: request to programming session",
             "expect": ["5002*"],
             "timeout": "2s",
             "fail": "fail_handler"
@@ -40,6 +40,7 @@
         {
             "name": "delay",
             "action": "",
+            "description": "delay",
             "expect": "",
             "timeout": "3s",
             "fail": "fail_handler"
@@ -47,6 +48,7 @@
 		{
             "name": "send_diag",
             "action": [ "22f186",  "1002" ],
+            "description": "diag: request to programming session",
             "expect": [  "62f186*", "5002" ],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -54,6 +56,7 @@
 		{
             "name": "delay",
             "action": "",
+            "description": "delay",
             "expect": "",
             "timeout": "2s",
             "fail": "fail_handler"
@@ -61,6 +64,7 @@
 		{
             "name": "send_diag",
             "action": ["22f186", "22eda0",  "22ed20"],
+            "description": "diag: read data by identifier",
             "expect": ["62f186*","62eda0*", "62ed20*"],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -68,6 +72,7 @@
 		{
             "name": "delay",
             "action": "",
+            "description": "delay",
             "expect": "",
             "timeout": "2s",
             "fail": "fail_handler"
@@ -75,6 +80,7 @@
 		{
             "name": "send_diag",
             "action": [ "22f186",  "1002" ],
+            "description": "diag: read data by identifier & request to programming session",
             "expect": [  "62f186*", "5002" ],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -82,6 +88,7 @@
 		{
             "name": "delay",
             "action": "",
+            "description": "delay",
             "expect": "",
             "timeout": "2s",
             "fail": "fail_handler"
@@ -89,6 +96,7 @@
         {
             "name": "securityaccess_01",
             "action": ["algorithm:AES128", "iv:random", "encryption_authentication_key:55555555555555555555555555555555", "proof_of_ownership_key:55555555555555555555555555555555"],
+            "description": "Execute security-access level 01",
             "expect": ["67*"],
             "timeout": "2s",
             "fail": "fail_handler"
@@ -96,6 +104,7 @@
 		{
             "name": "swdl",
             "action": ["path:sbl.vbf", "format:vbf"],
+            "description": "Download SBL vbf",
             "expect": [""],
             "timeout": "15s",
             "fail": "fail_handler"
@@ -103,6 +112,7 @@
         {
             "name": "send_diag",
             "action": [ "3101030170100000" ],
+            "description": "Request to active SBL",
             "expect": [  "71010301*" ],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -110,6 +120,7 @@
         {
             "name": "delay",
             "action": "",
+            "description": "delay",
             "expect": "",
             "timeout": "2s",
             "fail": "fail_handler"
@@ -117,6 +128,7 @@
         {
             "name": "swdl",
             "action": ["path:cal.vbf", "format:vbf"],
+            "description": "Download calibration vbf",
             "expect": [""],
             "timeout": "15s",
             "fail": "fail_handler"
@@ -124,6 +136,7 @@
 		{
             "name": "swdl",
             "action": ["path:app.vbf", "format:vbf"],
+            "description": "Download application vbf",
             "expect": [""],
             "timeout": "15s",
             "fail": "fail_handler"
@@ -131,6 +144,7 @@
 		{
             "name": "send_diag",
             "action": [ "31010205", "1101" ],
+            "description": "Request compatible&complete check",
             "expect": [  "71010205*", "5101" ],
             "timeout": "1s",
             "fail": "fail_handler"
@@ -138,6 +152,7 @@
         {
             "name": "socket",
             "action": "disconnect",
+            "description": "Disconnect with ECU",
             "expect": "0x00",
             "timeout": "1m",
             "fail": "fail_handler"
@@ -147,6 +162,7 @@
         {
             "name": "send_diag",
             "action": ["1101"],
+            "description": "Reset ECU",
             "expect": ["7f*"],
             "timeout": "5m",
             "fail": ""

@@ -92,7 +92,6 @@ fn main() {
     }
 
     /* init transport module */
-    //TODO: pass Diag object to executor
     //let mut diag_obj = transport::diag::create_diag();
 
     // // Call connect method, test

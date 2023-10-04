@@ -7,13 +7,14 @@ use serde_json::Value;
 use utils;
 
 use crate::transport;
-use crate::executor::parameters::SequenceItem;
+use crate::executor::parameters::{PARAMETERS, SequenceItem};
 use crate::executor::securityaccess;
 use crate::executor::swdl;
 
 pub struct Executor {
     s_diag_obj: Arc<Mutex<transport::diag::Diag>>,
 }
+
 
 impl Executor {
 
@@ -27,7 +28,8 @@ impl Executor {
  *  \reentrant:  TRUE
  *  \return     error code if any
  ****************************************************************************************************************/
-pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io::Error> {
+// pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io::Error> {
+pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str) -> Result<(), io::Error> {
     // Get timeout value
     let mut timeout: u64 = 1000; //1000ms as default
     match utils::common::parse_duration_to_milliseconds(item.timeout.as_str()) {
@@ -35,7 +37,9 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
         None => debug!("Invalid duration: {}", item.timeout),
     }
 
-    let mut stream = self.s_diag_obj.lock().unwrap();
+    let clone_self_obj = this.clone();
+    let self_obj_lock = this.lock().unwrap();
+    let mut stream = self_obj_lock.s_diag_obj.lock().unwrap();
     match item.name.as_str() {
         "socket" => {
             match &item.action {
@@ -89,7 +93,43 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                             }
                             match stream.receive_doip(timeout) {
                                 Ok(Some(data)) => debug!("Receive doip data {:?} successfully!", data),
-                                Ok(None) => debug!("Receive doip successfully!"),
+                                Ok(None) => {
+                                    debug!("Doip activation successfully!");
+                                    if PARAMETERS.read().unwrap().tester_present {
+                                        let interval = match utils::common::parse_duration_to_milliseconds(item.timeout.as_str()) {
+                                            Some(temp) => temp,
+                                            None => 1000, //1000ms
+                                        };
+                                        thread::spawn(move || {
+                                            // start tester-present
+                                            loop {
+                                                {
+                                                    let mu_self_obj = clone_self_obj.lock().unwrap();
+                                                    let byte_vector: Vec<u8> = vec![0x3E, 0x80];
+                                                    let mut mu_diag_obj = mu_self_obj.s_diag_obj.lock().unwrap();
+                                                    match mu_diag_obj.send_diag(byte_vector) {
+                                                        Ok(()) => {}
+                                                        Err(err) => {
+                                                            eprintln!("Failed to send diag tester-present: {}", err);
+                                                            break;
+                                                        }
+                                                    }
+                                                    //suppress reply bit, ignore receive diag data, receive doip ACK
+                                                    // debug!("found suppress bit, ignore checking respond diag");
+                                                    match mu_diag_obj.receive_doip(1000) {
+                                                        Ok(Some(_data)) => {}
+                                                        Ok(None) => {}
+                                                        Err(err) => {
+                                                            eprintln!("Failed to Receive doip Ack: {}", err);
+                                                            break;
+                                                        }
+                                                    };
+                                                } //drop/unlock mu_self_obj and mu_diag_obj
+                                                thread::sleep(Duration::from_millis(interval));
+                                            }
+                                        });
+                                    }
+                                }
                                 Err(err) => {
                                     eprintln!("Failed to Receive doip activation: {}", err);
                                     return Err(err);
@@ -137,7 +177,7 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                     // Now 'action_vecs' contains the parsed Vec<u8> for multiple actions
                     for (i, action) in action_vecs.iter().enumerate() {
                         let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
-                        let u8_action = utils::common::hex_strings_to_u8(&hex_action);
+                        let u8_action = utils::common::vec_hex_strings_to_u8(&hex_action);
                         let sub_service_byte = u8_action[1];
                         let diag_len = u8_action.len();
                         match stream.send_diag(u8_action) {
@@ -147,8 +187,8 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                                 return Err(err);
                             }
                         }
-                        //TODO: Check suppress reply bit
-                        if diag_len==2 && (sub_service_byte & 0x80) == 0x80 {
+                        //Check suppress reply bit
+                        if diag_len == 2 && (sub_service_byte & 0x80) == 0x80 {
                             debug!("found suppress bit, ignore checking respond diag");
                             //Ignore DoIP ACK
                             match stream.receive_doip(timeout) {
@@ -169,11 +209,11 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
                                         if let Some(expect_str) = expect_value.as_str() {
                                             debug!("Sent {:?}, Expect at index {}: {}, Receive {:?}", hex_action, i, expect_str, data);
                                             if utils::common::compare_expect_value(expect_str, data) == false {
-                                                //return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
+                                                return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
                                             }
                                         } else {
                                             eprintln!("Value at index {} is not a string.", i);
-                                            //return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                                            return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                                         }
                                     }
                                 }
@@ -240,6 +280,9 @@ pub fn execute_cmd(&mut self, item: SequenceItem, vendor: &str) -> Result<(), io
             }
         }
         "delay" => {
+            //unlock objects
+            drop(stream);
+            drop(self_obj_lock);
             let duration = Duration::from_millis(timeout);
             thread::sleep(duration);
         }

@@ -31,16 +31,16 @@ pub fn parse_duration_to_milliseconds(duration_str: &str) -> Option<u64> {
 
 
 /*****************************************************************************************************************
- *  utils::common::hex_strings_to_u8 function
- *  brief      Function to convert hex string to integer u8 array
- *  details    -
+ *  utils::common::vec_hex_strings_to_u8 function
+ *  brief      Function to convert hex Vec<String> to Vec<u8> array
+ *  details    Example: "11223344" -> 0x11 0x22 0x33 0x44
  *  \param[in]  hex_strings: refer to hex string
  *  \param[out] -
  *  \precondition -
  *  \reentrant:  TRUE
  *  \return     Vec<u8> if any
  ****************************************************************************************************************/
-pub fn hex_strings_to_u8(hex_strings: &Vec<String>) -> Vec<u8> {
+pub fn vec_hex_strings_to_u8(hex_strings: &Vec<String>) -> Vec<u8> {
     hex_strings
         .iter()
         .map(|hex_str| {
@@ -86,6 +86,17 @@ pub fn compare_expect_value(string_a: &str, vec_b: Vec<u8>) -> bool {
     true
 }
 
+
+/*****************************************************************************************************************
+ *  utils::common::hex_string_to_bytes function
+ *  brief      Function to convert hex string to Vec<u8> array
+ *  details    Example: "0x11223344" -> 0x11 0x22 0x33 0x44
+ *  \param[in]  hex_strings: refer to hex string
+ *  \param[out] -
+ *  \precondition -
+ *  \reentrant:  TRUE
+ *  \return     Vec<u8> if any
+ ****************************************************************************************************************/
 pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, hex::FromHexError> {
     let hex_string_without_prefix = hex_string.trim_start_matches("0x");
     hex::decode(hex_string_without_prefix)

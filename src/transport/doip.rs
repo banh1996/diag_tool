@@ -340,9 +340,10 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                         }
                         if doip_payload_bytes[0] == 0x10 { //Routing activation successful
                             G_IS_ROUTING_SUCCESS.store(true, Ordering::Relaxed);
+                            return Ok(None);
                         }
                         //TODO: send activation code reply to upper layer
-                        return Ok(None);
+                        return Err(Error::new(ErrorKind::ConnectionRefused, "Doip activation fail"));
                     },
                     _ => {
                         continue;

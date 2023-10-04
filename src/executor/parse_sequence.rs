@@ -1,11 +1,12 @@
 use log::debug;
-use executor;
 use std::sync::{Arc, Mutex};
 use std::fs::File;
 use std::io::{self, Read};
-use transport;
+
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
+use crate::executor::executor::Executor;
 use crate::transport::config::CONFIG;
+use crate::transport::diag;
 
 /*****************************************************************************************************************
  *  executor::parse function
@@ -33,29 +34,23 @@ pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
     // Update the PARAMETERS global variable
     *PARAMETERS.write().expect("Failed to acquire write lock") = Parameters {
         vin: seq_obj.parameter.vin,
-        algorithm: seq_obj.parameter.algorithm,
-        key_lv1: seq_obj.parameter.key_lv1,
-        key_lv2: seq_obj.parameter.key_lv2,
-        key_lv3: seq_obj.parameter.key_lv3,
-        key_lv4: seq_obj.parameter.key_lv4,
         tester_present: seq_obj.parameter.tester_present,
+        tester_present_interval: seq_obj.parameter.tester_present_interval,
     };
 
     //Init Exeutor object
-    let diag_obj = Arc::new(Mutex::new(transport::diag::create_diag()));
-    let mut executor_obj = executor::executor::Executor::create_executor(Arc::clone(&diag_obj));
+    let diag_obj = Arc::new(Mutex::new(diag::create_diag()));
+    let executor_obj = Arc::new(Mutex::new(Executor::create_executor(Arc::clone(&diag_obj))));
 
     for item in seq_obj.sequence {
         // Access fields of the SequenceItem struct for processing
         debug!("Name: {}", item.name);
         debug!("Action: {:?}", item.action);
+        debug!("Description: {}", item.description);
         debug!("Expect: {:?}", item.expect);
-        debug!("Timeout: {}", item.timeout);
-        //debug!("Fail: {}", item.fail);
-        //debug!("--------------------------");
 
         //TODO: call to executor
-        match executor_obj.execute_cmd(item, &config.ethernet.vendor) {
+        match Executor::execute_cmd(Arc::clone(&executor_obj), item, &config.ethernet.vendor) {
             Ok(()) => debug!("Command executed successfully!"),
             Err(err) => {
                 eprintln!("Error executing command: {}, STOP", err);

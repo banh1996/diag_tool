@@ -1,7 +1,7 @@
 {
     "ethernet": {
         "interface": "eth0",
-        "local_ipv4": "localhost",
+        "local_ipv4": "169.254.4.31",
         "remote_ip": "169.254.4.10",
         "remote_port": "13400",
         "role": "client",

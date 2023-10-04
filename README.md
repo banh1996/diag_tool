@@ -21,9 +21,9 @@ cargo build
 <summary><s>Parse json configuration file</s></summary>
 <summary><s>Check json configuration parameters before execute</s></summary>
 <summary><s>Parse json sequence file</s></summary>
-<summary>Check json sequence parameters before execute</summary>
 <summary><s>full-sequence for SWDL</s></summary>
 <summary>Support SWDL for hex, S37, vbf format</summary>
+<summary><s>Support tester-present feature</s></summary>
 <summary>Lock json folder by password to protect sensitive data (OEM keys)</summary>
 <summary>Execute CLI cmd from terminal (send diag cmd)</summary>
 <summary>Support IPv6</summary>
@@ -34,7 +34,7 @@ cargo build
 <summary>Support TLS for DoIp layer</summary>
 <summary>Support GUI?</summary>
 <summary>Calculate response time</summary>
-<summary>Make it more OOP</summary>
+<summary><s>Make it more OOP</s></summary>
 <summary>Handle error code</summary>
 <summary>Support to export test report</summary>
 
