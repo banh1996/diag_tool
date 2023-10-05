@@ -188,7 +188,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                         match stream.send_diag(u8_action) {
                             Ok(()) => {}
                             Err(err) => {
-                                eprintln!("Failed to send diag activation: {}", err);
+                                eprintln!("Failed to send diag data: {}", err);
                                 return Err(err);
                             }
                         }

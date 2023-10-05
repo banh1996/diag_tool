@@ -61,7 +61,7 @@
             "timeout": "2s",
             "fail": "fail_handler"
         },
-		{
+        {
             "name": "swdl",
             "action": ["path:sbl.vbf", "format:vbf"],
             "description": "Download SBL vbf",
@@ -93,7 +93,7 @@
             "timeout": "15s",
             "fail": "fail_handler"
         },
-		{
+        {
             "name": "swdl",
             "action": ["path:app.vbf", "format:vbf"],
             "description": "Download application vbf",

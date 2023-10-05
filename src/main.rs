@@ -10,12 +10,12 @@ extern crate cipher;
 extern crate ctr;
 extern crate hex;
 
-// use std::thread;
+use std::thread;
 use log::debug;
 use std::env;
 use getopts::Options;
-
-//use log::{debug, info};
+use std::sync::{Arc, Mutex};
+use std::io;
 
 mod utils {
     pub mod parse_config;
@@ -40,7 +40,7 @@ mod transport {
 
 use utils::parse_config; // Import the parse config module
 use executor::parse_sequence; // Import the parse sequence module
-
+use transport::diag;
 
 fn main() {
     // Define the available command-line options
@@ -92,68 +92,95 @@ fn main() {
     }
 
     /* init transport module */
-    //let mut diag_obj = transport::diag::create_diag();
-
-    // // Call connect method, test
-    // match diag_obj.connect() {
-    //     Ok(()) => debug!("Connected successfully!"),
-    //     Err(err) => eprintln!("Failed to connect: {}", err),
-    // }
-
-    // // Call activate method, test
-    // match diag_obj.send_doip_routing_activation() {
-    //     Ok(()) => debug!("send_doip_routing_activation successfully!"),
-    //     Err(err) => eprintln!("Failed to send_doip_routing_activation: {}", err),
-    // }
+    let diag_obj = Arc::new(Mutex::new(diag::create_diag()));
+    let clone_diag_obj = Arc::clone(&diag_obj);
 
     /* handle json sequence file */
-    //TODO
-    if let Some(sequence_filename) = matches.opt_str("sequence") {
-        match parse_sequence::parse(sequence_filename) {
-            Ok(()) => {}
-            Err(err) => {
-                eprintln!("Error reading sequence file {}", err);
-                return;
-            }
-        };
-    } else {
-        eprintln!("Error: --sequence option is required");
-        print_usage(&args[0], &opts);
-        return;
-    }
-/*
-    //TODO: spawn thread to handl sequence, main thread to handle CLI
-    // Spawn a new thread to handle data reception and detach it.
     thread::spawn(move || {
-        let p_data: Vec<u8> = vec![b'a', b'b', b'c', 2, 3, 4, 5, 6, 7, 8, b'z'];
-        debug!("Sending data");
-        match diag_obj.send_diag(p_data) {
-            Ok(()) => debug!("Sent data successfully!"),
-            Err(err) => eprintln!("Failed to connect: {}", err),
-        }
-
-        match diag_obj.receive_diag( 10) {
-            Ok(data) => {
-                // Process the received data
-                debug!("Received {} bytes: {:?}", data.len(), data);
-            }
-            Err(e) => {
-                eprintln!("Error: {}", e);
-            }
-        }
-
-        //test
-        if let Err(err) = diag_obj.disconnect() {
-            eprintln!("diag disconnect Error: {}", err);
-            return;
-        }
-        else {
-            debug!("Disconnected!");
+        if let Some(sequence_filename) = matches.opt_str("sequence") {
+            match parse_sequence::parse(sequence_filename, diag_obj) {
+                Ok(()) => {}
+                Err(err) => {
+                    eprintln!("Error reading sequence file {}", err);
+                }
+            };
+        } else {
+            eprintln!("Error: --sequence option is required");
+            print_usage(&args[0], &opts);
         }
     });
-*/
+
+    //TODO: spawn thread to handl sequence, main thread to handle CLI
+    // Spawn a new thread to handle data reception and detach it.
+
+    loop {
+        let mut input = String::new();
+        print!("CMD>>> ");
+        io::stdin().read_line(&mut input).expect("Failed to read line");
+
+        // Trim the input to remove leading/trailing whitespaces and newline characters
+        let input = input.trim();
+
+        // Split the input based on ":" and collect the parts into a vector
+        let parts: Vec<&str> = input.split(':').collect();
+
+        // Ensure there are exactly two parts (before and after ":")
+        if parts.len() == 2 {
+            //TODO: add some actions here
+            let name = parts[0].trim();
+            let action = parts[1].trim();
+            let trimmed_action = action.replace(" ", "");
+            let mut stream = clone_diag_obj.lock().unwrap();
+            if name == "send_diag" {
+                //let vec_action = utils::common::hex_string_to_bytes(&trimmed_action);
+                let vec_action = match utils::common::hex_string_to_bytes(&trimmed_action) {
+                    Ok(bytes) => bytes,
+                    Err(e) => {
+                        println!("Error when parse action: {}", e);
+                        Vec::new()
+                    }
+                };
+                let clone_vec_action = vec_action.clone();
+                // Execute command
+                match stream.send_diag(vec_action) {
+                    Ok(()) => {debug!("Sent diag data {:02X?}", clone_vec_action)}
+                    Err(err) => {eprintln!("Failed to send diag data: {}", err)}
+                }
+                match stream.receive_diag(3000) { //timeout 3s
+                    Ok(data) => {debug!("Sent diag data {:02X?}, Receive {:02X?}", clone_vec_action, data)}
+                    Err(err) => {eprintln!("Failed to receive diag data: {}", err)}
+                }
+            }
+            else if name == "socket" {
+                match trimmed_action.as_str() {
+                    "connect" => {
+                        match stream.connect() {
+                            Ok(()) => debug!("Connected successfully!"),
+                            Err(err) => {
+                                eprintln!("Failed to connect: {}", err);
+                            }
+                        }
+                    }
+                    "disconnect" => {
+                        match stream.disconnect() {
+                            Ok(()) => debug!("Disconnected successfully!"),
+                            Err(err) => {
+                                eprintln!("Failed to disconnect: {}", err);
+                            }
+                        }
+                    }
+                    _ => eprintln!("Invalid socket action format: {}", trimmed_action),
+                }
+            }
+        } else {
+            eprintln!("Invalid input format. Please enter a string with exactly one ':' character.\n
+                        Example: uds:22f186   doip:activation");
+        }
+    }
+
+
     //TODO: impliment CLI
-    loop {}
+    //loop {}
 }
 
 fn print_usage(program: &str, opts: &Options) {

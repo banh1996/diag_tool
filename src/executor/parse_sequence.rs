@@ -18,10 +18,11 @@ use crate::transport::diag;
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
+pub fn parse(sequence_filename: String,
+             diag_obj: Arc<Mutex<diag::Diag>>) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
 
-    // Read the JSON file and update the `CONFIG` global variable
+    // Read the JSON file
     let mut file = File::open(&sequence_filename).expect("Failed to open config file");
     let mut json_contents = String::new();
     file.read_to_string(&mut json_contents).expect("Failed to read file");
@@ -38,8 +39,7 @@ pub fn parse(sequence_filename: String) -> Result<(), io::Error> {
         tester_present_interval: seq_obj.parameter.tester_present_interval,
     };
 
-    //Init Exeutor object
-    let diag_obj = Arc::new(Mutex::new(diag::create_diag()));
+    //Init Executor object
     let executor_obj = Arc::new(Mutex::new(Executor::create_executor(Arc::clone(&diag_obj))));
 
     for item in seq_obj.sequence {
