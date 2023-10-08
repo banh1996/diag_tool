@@ -11,8 +11,8 @@ pub struct Parameters {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SequenceItem {
     pub name: String,
-    pub action: serde_json::Value, // Use serde_json::Value to handle dynamic action data
     pub description: String,
+    pub action: serde_json::Value, // Use serde_json::Value to handle dynamic action data
     pub expect: serde_json::Value, // Use serde_json::Value to handle dynamic expect data
     pub timeout: String,
     pub fail: String,

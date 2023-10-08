@@ -16,11 +16,13 @@ use std::env;
 use getopts::Options;
 use std::sync::{Arc, Mutex};
 use std::io;
+use std::io::Write;
 
 mod utils {
     pub mod parse_config;
     pub mod common;
     pub mod excrypto;
+    pub mod cli;
 }
 
 mod executor {
@@ -110,77 +112,27 @@ fn main() {
         }
     });
 
-    //TODO: spawn thread to handl sequence, main thread to handle CLI
-    // Spawn a new thread to handle data reception and detach it.
-
+    //handle CLI
     loop {
         let mut input = String::new();
-        print!("CMD>>> ");
+        print!("CMD>>>> ");
+        io::stdout().flush().expect("Failed to flush stdout");
         io::stdin().read_line(&mut input).expect("Failed to read line");
-
         // Trim the input to remove leading/trailing whitespaces and newline characters
         let input = input.trim();
 
-        // Split the input based on ":" and collect the parts into a vector
-        let parts: Vec<&str> = input.split(':').collect();
+        if input.is_empty() {
+            continue;
+        }
 
-        // Ensure there are exactly two parts (before and after ":")
-        if parts.len() == 2 {
-            //TODO: add some actions here
-            let name = parts[0].trim();
-            let action = parts[1].trim();
-            let trimmed_action = action.replace(" ", "");
-            let mut stream = clone_diag_obj.lock().unwrap();
-            if name == "send_diag" {
-                //let vec_action = utils::common::hex_string_to_bytes(&trimmed_action);
-                let vec_action = match utils::common::hex_string_to_bytes(&trimmed_action) {
-                    Ok(bytes) => bytes,
-                    Err(e) => {
-                        println!("Error when parse action: {}", e);
-                        Vec::new()
-                    }
-                };
-                let clone_vec_action = vec_action.clone();
-                // Execute command
-                match stream.send_diag(vec_action) {
-                    Ok(()) => {debug!("Sent diag data {:02X?}", clone_vec_action)}
-                    Err(err) => {eprintln!("Failed to send diag data: {}", err)}
-                }
-                match stream.receive_diag(3000) { //timeout 3s
-                    Ok(data) => {debug!("Sent diag data {:02X?}, Receive {:02X?}", clone_vec_action, data)}
-                    Err(err) => {eprintln!("Failed to receive diag data: {}", err)}
-                }
+        //parse cli
+        match utils::cli::parse(Arc::clone(&clone_diag_obj), input) {
+            Ok(()) => {}
+            Err(err) => {
+                eprintln!("Failed to do cli: {}", err);
             }
-            else if name == "socket" {
-                match trimmed_action.as_str() {
-                    "connect" => {
-                        match stream.connect() {
-                            Ok(()) => debug!("Connected successfully!"),
-                            Err(err) => {
-                                eprintln!("Failed to connect: {}", err);
-                            }
-                        }
-                    }
-                    "disconnect" => {
-                        match stream.disconnect() {
-                            Ok(()) => debug!("Disconnected successfully!"),
-                            Err(err) => {
-                                eprintln!("Failed to disconnect: {}", err);
-                            }
-                        }
-                    }
-                    _ => eprintln!("Invalid socket action format: {}", trimmed_action),
-                }
-            }
-        } else {
-            eprintln!("Invalid input format. Please enter a string with exactly one ':' character.\n
-                        Example: uds:22f186   doip:activation");
         }
     }
-
-
-    //TODO: impliment CLI
-    //loop {}
 }
 
 fn print_usage(program: &str, opts: &Options) {

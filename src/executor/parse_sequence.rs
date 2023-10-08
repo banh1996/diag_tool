@@ -6,7 +6,7 @@ use std::io::{self, Read};
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
 use crate::executor::executor::Executor;
 use crate::transport::config::CONFIG;
-use crate::transport::diag;
+use crate::transport::diag::Diag;
 
 /*****************************************************************************************************************
  *  executor::parse function
@@ -18,8 +18,7 @@ use crate::transport::diag;
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn parse(sequence_filename: String,
-             diag_obj: Arc<Mutex<diag::Diag>>) -> Result<(), io::Error> {
+pub fn parse(sequence_filename: String, diag_obj: Arc<Mutex<Diag>>) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
 
     // Read the JSON file
@@ -45,8 +44,8 @@ pub fn parse(sequence_filename: String,
     for item in seq_obj.sequence {
         // Access fields of the SequenceItem struct for processing
         debug!("Name: {}", item.name);
-        debug!("Action: {:?}", item.action);
         debug!("Description: {}", item.description);
+        debug!("Action: {:?}", item.action);
         debug!("Expect: {:?}", item.expect);
 
         //TODO: call to executor
