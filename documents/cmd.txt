@@ -1,0 +1,9 @@
+You can send command in CLI.
+Example:
+
+socket:connect
+send_doip:activation
+send_diag:1003
+securityaccess_05:["algorithm:AES128", "iv:random", "encryption_authentication_key:55555555555555555555555555555555", "proof_of_ownership_key:55555555555555555555555555555555"]
+send_diag:1002
+socket:disconnect

@@ -1,12 +1,14 @@
 use log::debug;
 use std::sync::{Arc, Mutex};
 use std::io::{self, Error, ErrorKind};
-use transport::diag::Diag;
+use serde_json::{self, Value};
 
-use utils;
+use crate::executor::executor::Executor;
+use crate::executor::parameters::SequenceItem;
+use crate::transport::config::CONFIG;
 
-pub fn parse(diag_obj: Arc<Mutex<Diag>>, input: &str) -> Result<(), io::Error> {
-    let timeout: u64 = 10000; //10s
+pub fn parse(executor_obj: Arc<Mutex<Executor>>, input: &str) -> Result<(), io::Error> {
+    let config = CONFIG.read().unwrap();
     // Split the input based on ":" and collect the parts into a vector
     let parts: Vec<&str> = input.splitn(2, ':').collect();
 
@@ -18,70 +20,59 @@ pub fn parse(diag_obj: Arc<Mutex<Diag>>, input: &str) -> Result<(), io::Error> {
     let name = parts[0].trim();
     let action = parts[1].trim();
     let trimmed_action = action.replace(" ", "");
-    let mut stream = diag_obj.lock().unwrap();
-    if name == "send_diag" {
-        //let vec_action = utils::common::hex_string_to_bytes(&trimmed_action);
-        let vec_action = match utils::common::hex_string_to_bytes(&trimmed_action) {
-            Ok(bytes) => bytes,
-            Err(e) => {
-                println!("Error when parse action: {}", e);
-                Vec::new()
-            }
-        };
-        let clone_vec_action = vec_action.clone();
-        // Execute command
-        match stream.send_diag(vec_action) {
-            Ok(()) => {debug!("Sent diag data {:02X?}", clone_vec_action)}
-            Err(err) => {eprintln!("Failed to send diag data: {}", err)}
+    let mut action_value: Value = Value::Null;
+
+    match name {
+        "socket" | "send_doip" => {
+            action_value = Value::String(String::from(trimmed_action))
         }
-        match stream.receive_diag(timeout) {
-            Ok(data) => {debug!("Sent diag data {:02X?}, Receive {:02X?}", clone_vec_action, data)}
-            Err(err) => {eprintln!("Failed to receive diag data: {}", err)}
+        "send_diag" => {
+            action_value = Value::Array(vec![Value::String(String::from(trimmed_action))])
         }
-    }
-    else if name == "send_doip" {
-        match trimmed_action.as_str() {
-            "activation" => {
-                match stream.send_doip_routing_activation() {
-                    Ok(()) => debug!("Send doip successfully!"),
-                    Err(err) => {
-                        eprintln!("Failed to send doip activation: {}", err);
-                        return Err(err);
-                    }
+        s if s.starts_with("securityaccess_") => {
+            let result: Result<Value, serde_json::Error> = serde_json::from_str(trimmed_action.as_str());
+            match result {
+                Ok(parsed_json) => {
+                    action_value = parsed_json;
                 }
-                match stream.receive_doip(timeout) {
-                    Ok(Some(data)) => debug!("Receive doip data {:?} successfully!", data),
-                    Ok(None) => {
-                        debug!("Doip activation successfully!");
-                    }
-                    Err(err) => {
-                        eprintln!("Failed to Receive doip activation: {}", err);
-                        return Err(err);
-                    }
+                Err(e) => {
+                    println!("Error parsing securityaccess action: {}", e);
                 }
             }
-            _ => eprintln!("Invalid send_doip action format: {}", trimmed_action),
+        }
+        "swdl" => {
+            let result: Result<Value, serde_json::Error> = serde_json::from_str(trimmed_action.as_str());
+            match result {
+                Ok(parsed_json) => {
+                    action_value = parsed_json;
+                }
+                Err(e) => {
+                    println!("Error parsing securityaccess action: {}", e);
+                }
+            }
+        }
+        _ => {
+            action_value = Value::Null;
+            println!("Handling other cases: {}", name);
         }
     }
-    else if name == "socket" {
-        match trimmed_action.as_str() {
-            "connect" => {
-                match stream.connect() {
-                    Ok(()) => debug!("Connected successfully!"),
-                    Err(err) => {
-                        eprintln!("Failed to connect: {}", err);
-                    }
-                }
-            }
-            "disconnect" => {
-                match stream.disconnect() {
-                    Ok(()) => debug!("Disconnected successfully!"),
-                    Err(err) => {
-                        eprintln!("Failed to disconnect: {}", err);
-                    }
-                }
-            }
-            _ => eprintln!("Invalid socket action format: {}", trimmed_action),
+
+    let item = SequenceItem {
+        name: String::from(name),
+        description: String::from("item_description"),
+        action: action_value,
+        expect: Value::Array(vec![
+            Value::String(String::from("*")),
+        ]),
+        timeout: String::from("10s"),
+        fail: String::from(""),
+    };
+
+    match Executor::execute_cmd(Arc::clone(&executor_obj), item, &config.ethernet.vendor) {
+        Ok(()) => debug!("Command executed successfully!"),
+        Err(err) => {
+            eprintln!("Error executing command: {}, STOP", err);
+            return Err(err);
         }
     }
 

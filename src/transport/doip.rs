@@ -1,12 +1,12 @@
 //TODO: full compliance for ISO13400-1
-
-use crate::transport::config::CONFIG;
-use crate::transport::soad;
 use std::io::{self, Error, ErrorKind};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use debug;
+
+use crate::transport::config::CONFIG;
+use crate::transport::soad;
 
 /*****************************************************************************************************************
  *  Define all gloval macro & variable here

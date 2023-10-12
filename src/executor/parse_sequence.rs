@@ -6,7 +6,6 @@ use std::io::{self, Read};
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
 use crate::executor::executor::Executor;
 use crate::transport::config::CONFIG;
-use crate::transport::diag::Diag;
 
 /*****************************************************************************************************************
  *  executor::parse function
@@ -18,7 +17,7 @@ use crate::transport::diag::Diag;
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn parse(sequence_filename: String, diag_obj: Arc<Mutex<Diag>>) -> Result<(), io::Error> {
+pub fn parse(sequence_filename: String, executor_obj: Arc<Mutex<Executor>>) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
 
     // Read the JSON file
@@ -38,9 +37,6 @@ pub fn parse(sequence_filename: String, diag_obj: Arc<Mutex<Diag>>) -> Result<()
         tester_present_interval: seq_obj.parameter.tester_present_interval,
     };
 
-    //Init Executor object
-    let executor_obj = Arc::new(Mutex::new(Executor::create_executor(Arc::clone(&diag_obj))));
-
     for item in seq_obj.sequence {
         // Access fields of the SequenceItem struct for processing
         debug!("Name: {}", item.name);
@@ -48,7 +44,6 @@ pub fn parse(sequence_filename: String, diag_obj: Arc<Mutex<Diag>>) -> Result<()
         debug!("Action: {:?}", item.action);
         debug!("Expect: {:?}", item.expect);
 
-        //TODO: call to executor
         match Executor::execute_cmd(Arc::clone(&executor_obj), item, &config.ethernet.vendor) {
             Ok(()) => debug!("Command executed successfully!"),
             Err(err) => {

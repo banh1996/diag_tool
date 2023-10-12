@@ -42,6 +42,7 @@ mod transport {
 
 use utils::parse_config; // Import the parse config module
 use executor::parse_sequence; // Import the parse sequence module
+use executor::executor::Executor;
 use transport::diag;
 
 fn main() {
@@ -95,12 +96,15 @@ fn main() {
 
     /* init transport module */
     let diag_obj = Arc::new(Mutex::new(diag::create_diag()));
-    let clone_diag_obj = Arc::clone(&diag_obj);
+
+    //Init Executor object
+    let executor_obj = Arc::new(Mutex::new(Executor::create_executor(diag_obj)));
+    let executor_obj_clone = Arc::clone(&executor_obj);
 
     /* handle json sequence file */
     thread::spawn(move || {
         if let Some(sequence_filename) = matches.opt_str("sequence") {
-            match parse_sequence::parse(sequence_filename, diag_obj) {
+            match parse_sequence::parse(sequence_filename, executor_obj) {
                 Ok(()) => {}
                 Err(err) => {
                     eprintln!("Error reading sequence file {}", err);
@@ -115,7 +119,7 @@ fn main() {
     //handle CLI
     loop {
         let mut input = String::new();
-        print!("CMD>>>> ");
+        print!("CMD>>> ");
         io::stdout().flush().expect("Failed to flush stdout");
         io::stdin().read_line(&mut input).expect("Failed to read line");
         // Trim the input to remove leading/trailing whitespaces and newline characters
@@ -126,7 +130,7 @@ fn main() {
         }
 
         //parse cli
-        match utils::cli::parse(Arc::clone(&clone_diag_obj), input) {
+        match utils::cli::parse(Arc::clone(&executor_obj_clone), input) {
             Ok(()) => {}
             Err(err) => {
                 eprintln!("Failed to do cli: {}", err);

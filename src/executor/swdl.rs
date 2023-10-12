@@ -2,7 +2,8 @@ use std::io::{self, Read, Error, ErrorKind};
 use crate::transport;
 use log::debug;
 use std::fs::File;
-use utils;
+
+use crate::utils;
 
 fn extract_erase_values(erase_content: &str) -> (String, String) {
     let mut erase_start_addr = String::new();

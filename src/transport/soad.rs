@@ -66,7 +66,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
 
     // Check if tester role is client, then call connect cmd to server. or else, start to listen socket
     if &config.ethernet.role == "client" {
-        if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "socket is not initilized yet!",
@@ -95,7 +95,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
     }
     else if &config.ethernet.role == "server" {
         // Listen tcp stream in case tester role is server
-        if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
             // Extract the local IPv4 as a regular String or use an empty string if it's None.
             let local_ipv4 = if let Some(ipv4) = &config.ethernet.local_ipv4 {
                 ipv4.to_string()
@@ -162,9 +162,6 @@ pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
     // Lock the stream for access
     let stream = stream.lock().unwrap();
 
-    // Reset G_IS_INIT_SOCKET to false, then reconnect allow
-    G_IS_INIT_SOCKET.store(false, Ordering::Relaxed);
-
     // Shutdown the TcpStream
     if let Err(err) = stream.shutdown(Shutdown::Both) {
         // Handle the error. You can print an error message or take other actions as needed.
@@ -190,7 +187,7 @@ pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
  ****************************************************************************************************************/
 pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), io::Error> {
     // Check if the socket is connected before sending data
-    if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
         eprint!("Not initialized yet!");
         return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
     }
@@ -225,7 +222,7 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
  ****************************************************************************************************************/
 pub fn receive_tcp(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Vec<u8>, io::Error> {
     // Check if the socket is connected before sending data
-    if !G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
+    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
         eprint!("Not initialized yet!");
         return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
     }

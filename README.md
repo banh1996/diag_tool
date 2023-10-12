@@ -25,7 +25,7 @@ cargo build
 <summary>Support SWDL for hex, S37, vbf format</summary>
 <summary><s>Support tester-present feature</s></summary>
 <summary>Lock json folder by password to protect sensitive data (OEM keys)</summary>
-<summary>Execute CLI cmd from terminal (send diag cmd)</summary>
+<summary><s>Execute CLI cmd from terminal (send diag cmd)</s></summary>
 <summary>Support IPv6</summary>
 <summary><s>Support Debug-log</s></summary>
 <summary><s>Support option argument</s></summary>

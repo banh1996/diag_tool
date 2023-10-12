@@ -1,10 +1,11 @@
 use log::debug;
-use crate::transport;
-use crate::executor::parameters::SequenceItem;
 use rand::Rng;
 use serde_json::Value;
 use std::io::{self, Error, ErrorKind};
-use utils;
+
+use crate::utils;
+use crate::transport;
+use crate::executor::parameters::SequenceItem;
 
 
 /*****************************************************************************************************************
