@@ -325,7 +325,7 @@ pub fn receive_doip(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Opti
                     0x0006 => { // Routing activation response
                         let (addresses_bytes, doip_payload_bytes) = payload.split_at(4);
                         // Check addresses matches with config
-                        debug!("Receive doip activation {:?}", addresses_bytes);
+                        debug!("Receive doip activation {:02X?}", addresses_bytes);
                         if u16::from_be_bytes([addresses_bytes[0], addresses_bytes[1]]) & config.doip.tester_addr
                             != config.doip.tester_addr {
                             continue;

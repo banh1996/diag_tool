@@ -48,7 +48,7 @@ fn extract_value(contents: &str, field: &str) -> String {
 }
 
 /*****************************************************************************************************************
- *  utils::parse function
+ *  swdl::parse_vbf function
  *  brief      Parse vbf swdl file to get header parameters
  *  details    -
  *  \param[in]  sw_filename  path to swdl file

@@ -92,7 +92,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                 }
                             }
                             match stream.receive_doip(timeout) {
-                                Ok(Some(data)) => debug!("Receive doip data {:?} successfully!", data),
+                                Ok(Some(data)) => debug!("Receive doip data {:02X?} successfully!", data),
                                 Ok(None) => {
                                     debug!("Doip activation successfully!");
                                     if PARAMETERS.read().unwrap().tester_present {

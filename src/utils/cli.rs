@@ -7,7 +7,18 @@ use crate::executor::executor::Executor;
 use crate::executor::parameters::SequenceItem;
 use crate::transport::config::CONFIG;
 
-pub fn parse(executor_obj: Arc<Mutex<Executor>>, input: &str) -> Result<(), io::Error> {
+
+/*****************************************************************************************************************
+ *  cli::parse function
+ *  brief      Parse command lines and execute them
+ *  details    -
+ *  \param[in]  input: command string
+ *  \param[out] -
+ *  \precondition -
+ *  \reentrant:  FALSE
+ *  \return -
+ ****************************************************************************************************************/
+ pub fn parse(executor_obj: Arc<Mutex<Executor>>, input: &str) -> Result<(), io::Error> {
     let config = CONFIG.read().unwrap();
     // Split the input based on ":" and collect the parts into a vector
     let parts: Vec<&str> = input.splitn(2, ':').collect();
