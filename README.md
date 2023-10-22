@@ -5,8 +5,16 @@ Should work on both Linux&Windows
 ## Main Flow
 ![main_flow](documents/main_flow.jpg)
 
+## Setup
+For Linux/MacOS install cargo by "curl https://sh.rustup.rs -sSf | sh"</br>
+For Window, download and install cargo at https://win.rustup.rs/</br>
+
 ## Build
-cargo build
+There are 2 modes for building, 1 for GUI application and 1 for CLI. Open cmd/terminal and use 1 command below:</br>
+cargo build --no-default-features --features "cli" --release</br>
+cargo build --no-default-features --features "cli" --debug</br>
+cargo build --features "gui" --release</br>
+cargo build --features "gui" --debug</br>
 
 ## Execute
 ./target/debug/diag_tool --debug --config json/config.json --sequence json/sequence.json
@@ -32,12 +40,12 @@ cargo build
 <summary>Full-compliance for ISO13400</summary>
 <summary>Full-compliance for ISO14229-1 3rd</summary>
 <summary>Support TLS for DoIp layer</summary>
-<summary>Support GUI?</summary>
+<summary><s>Support GUI</s></summary>
 <summary>Calculate response time</summary>
-<summary><s>Make it more OOP</s></summary>
 <summary>Handle error code</summary>
 <summary>Support to export test report</summary>
 
+## <span style="color: orange;">DEMO</span>
 
 ## <span style="color: yellow;">TESTING</span>
 <details>

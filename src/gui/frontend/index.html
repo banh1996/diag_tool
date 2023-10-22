@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tauri</title>
+  </head>
+
+  <body>
+    <h3>Diagnostic</h3>
+    <div>
+      <button id="connect-btn">CONNECT</button>
+    </div>
+    <h3>Database</h3>
+    <div>
+      <input id="diag-cmd" placeholder="type message for diag" />
+      <button id="send-btn">send</button>
+      <div id="log-box" placeholder="view message log here"></div>
+    </div>
+    <div>
+      <input type="file" id="import-button" aria-label="Select sequence file"></input>
+    </div>
+    <div id="response"></div>
+
+    <script>
+      const sendBtn = document.querySelector('#send-btn')
+      const connectBtn = document.querySelector('#connect-btn')
+      const diagInput = document.querySelector('#diag-cmd')
+      const logBox = document.querySelector("#log-box");
+      logBox.style.width = "100%";
+      logBox.style.height = "400px";
+      logBox.style.border = "1px solid black";
+      logBox.style.overflowY = "auto";
+      const importButton = document.querySelector("#import-button");
+      importButton.addEventListener("change", () => {
+        window.__TAURI__
+          .invoke('parse', {
+            input: importButton.files[0].path
+          })
+          .then(updateResponse)
+          .catch(updateResponse)
+      });
+
+      function updateResponse(response) {
+        logBox.append( typeof response === 'string' ? response : JSON.stringify(response))
+      }
+
+      connectBtn.addEventListener('click', () => {
+        window.__TAURI__
+          .invoke('connect')
+          .then(updateResponse)
+          .catch(updateResponse)
+      })
+
+      sendBtn.addEventListener('click', () => {
+        window.__TAURI__
+          .invoke('sendcmd', {
+            value: diagInput.value
+          })
+          .then(updateResponse)
+          .catch(updateResponse)
+      })
+
+    </script>
+  </body>
+</html>

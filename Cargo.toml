@@ -2,7 +2,7 @@
 name = "diag_tool"
 version = "0.1.0"
 authors = [ "Tran Ngoc Hung" ]
-#edition = "2023"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,3 +19,23 @@ log = "0.4.19"
 rand = "0.8.5"
 serde = { version = "1.0.171", features = ["derive"] }
 serde_json = "1.0.102"
+tauri = "1.5.2"
+
+[features]
+default = ["gui"]
+cli = []
+gui = []
+
+[profile.cli]
+inherits = "release"
+opt-level = 3  # Optimization level for CLI version
+panic = "abort"  # Abort on panic for CLI version
+lto = true       # Enable Link Time Optimization for CLI version
+debug = false    # Disable debug information for CLI version
+
+[profile.gui]
+inherits = "release"
+opt-level = 3  # Optimization level for GUI version
+panic = "abort"  # Abort on panic for GUI version
+lto = true       # Enable Link Time Optimization for GUI version
+debug = false    # Disable debug information for GUI version

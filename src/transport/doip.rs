@@ -3,7 +3,7 @@ use std::io::{self, Error, ErrorKind};
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
-use debug;
+use log::debug;
 
 use crate::transport::config::CONFIG;
 use crate::transport::soad;
