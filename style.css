@@ -1,0 +1,19 @@
+button[state="disconnected"] {
+    background-color: red;
+}
+
+button[state="connected"] {
+    background-color: green;
+}
+
+h3 {
+    color: black;
+}
+
+h2 {
+    color: orange;
+}
+
+p {
+    color: blue;
+}

@@ -183,7 +183,10 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                         let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
                         let u8_action = utils::common::vec_hex_strings_to_u8(&hex_action);
                         let clone_u8_action = u8_action.clone();
-                        let sub_service_byte = u8_action[1];
+                        let mut sub_service_byte: u8 = 0;
+                        if u8_action.len() > 1 {
+                            sub_service_byte = u8_action[1];
+                        }
                         let diag_len = u8_action.len();
                         match stream.send_diag(u8_action) {
                             Ok(()) => {}

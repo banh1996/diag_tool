@@ -1,6 +1,7 @@
 ## Description
 Rust project that can do diagnostic in ECU-Autosar via ethernet.
 Should work on both Linux&Windows
+![GUI](documents/GUI.jpg)
 
 ## Main Flow
 ![main_flow](documents/main_flow.jpg)

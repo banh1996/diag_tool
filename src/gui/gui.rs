@@ -76,7 +76,7 @@ fn disconnect() {
 
 
 #[tauri::command]
-fn sendcmd(value: String) {
+fn senduds(value: String) {
     let config = CONFIG.read().unwrap();
     let action_value = Value::Array(vec![Value::String(String::from(value))]);
     let item = SequenceItem {
@@ -121,7 +121,7 @@ pub fn run_gui() {
     //.manage(Counter(AtomicUsize::new(0)))
     .manage(Database(Default::default()))
     .invoke_handler(tauri::generate_handler![
-      sendcmd,
+      senduds,
       parse,
       connect,
       disconnect

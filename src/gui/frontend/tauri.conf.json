@@ -2,10 +2,10 @@
   "$schema": "schema.json",
   "build": {
     "distDir": [
-      "index.html"
+      "ui/"
     ],
     "devPath": [
-      "index.html"
+      "ui/"
     ],
     "beforeDevCommand": "",
     "beforeBuildCommand": "",
@@ -22,8 +22,6 @@
       "identifier": "com.tauri.dev",
       "icon": [
         ".icons/32x32.png",
-        ".icons/128x128.png",
-        ".icons/128x128@2x.png",
         ".icons/icon.icns",
         ".icons/icon.ico"
       ],
@@ -44,8 +42,8 @@
     "windows": [
       {
         "title": "Diagnostic-Tool",
-        "width": 800,
-        "height": 600,
+        "width": 1000,
+        "height": 690,
         "resizable": true,
         "fullscreen": false
       }
