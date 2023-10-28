@@ -7,13 +7,13 @@ use std::thread;
 use std::env;
 use getopts::Options;
 
-
 use crate::executor::executor::Executor;
 use crate::executor::parameters::SequenceItem;
 use crate::transport::config::CONFIG;
 use crate::utils; // Import the parse config module
 use crate::executor::parse_sequence; // Import the parse sequence module
 use crate::transport::diag;
+use crate::cli::cli;
 
 /*****************************************************************************************************************
  *  cli::parse function
@@ -182,7 +182,7 @@ pub fn run_cli() {
         }
 
         //parse cli
-        match utils::cli::parse(Arc::clone(&executor_obj_clone), input) {
+        match cli::parse(Arc::clone(&executor_obj_clone), input) {
             Ok(()) => {}
             Err(err) => {
                 eprintln!("Failed to do cli: {}", err);

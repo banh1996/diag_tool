@@ -33,16 +33,10 @@ pub fn init() {
     let config = CONFIG.read().unwrap();
     debug!("ethernet: {:?}", &config.ethernet.local_ipv4);
     debug!("doip: {:?}", &config.doip);
-
+    G_IS_INIT_SOCKET.store(true, Ordering::Relaxed);
     // Check if tester role is client, then exit without doing any
     if &config.ethernet.role == "client" {
-        if G_IS_INIT_SOCKET.swap(true, Ordering::Relaxed) {
-            debug!("Already Initilized socket!");
-        }
-        else {
-            debug!("Role is client, Ignore initilize server socket!");
-        }
-        return; //role is client, nothing to do
+        debug!("Role is client, Ignore initilize server socket!");
     }
 } /* init */
 
@@ -66,7 +60,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
 
     // Check if tester role is client, then call connect cmd to server. or else, start to listen socket
     if &config.ethernet.role == "client" {
-        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
+        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) == false {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "socket is not initilized yet!",
@@ -95,7 +89,7 @@ pub fn connect(dest_addr: String) -> Result<Arc<Mutex<TcpStream>>, io::Error> {
     }
     else if &config.ethernet.role == "server" {
         // Listen tcp stream in case tester role is server
-        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
+        if G_IS_INIT_SOCKET.load(Ordering::Relaxed) == false {
             // Extract the local IPv4 as a regular String or use an empty string if it's None.
             let local_ipv4 = if let Some(ipv4) = &config.ethernet.local_ipv4 {
                 ipv4.to_string()
@@ -187,7 +181,7 @@ pub fn disconnect(stream: &Arc<Mutex<TcpStream>>) -> Result<(), io::Error> {
  ****************************************************************************************************************/
 pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), io::Error> {
     // Check if the socket is connected before sending data
-    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
+    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) == false {
         eprint!("Not initialized yet!");
         return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
     }
@@ -222,7 +216,7 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
  ****************************************************************************************************************/
 pub fn receive_tcp(stream: &Arc<Mutex<TcpStream>>, timeout: u64) -> Result<Vec<u8>, io::Error> {
     // Check if the socket is connected before sending data
-    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) {
+    if G_IS_INIT_SOCKET.load(Ordering::Relaxed) == false {
         eprint!("Not initialized yet!");
         return Err(io::Error::new(io::ErrorKind::NotConnected, "Socket is not connected"));
     }

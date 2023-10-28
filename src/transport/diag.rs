@@ -1,9 +1,12 @@
 use crate::transport::config::CONFIG;
 use crate::transport::doip;
+use crate::transport::soad;
+
 use std::io;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 use log::debug;
+
 
 // Define the Diag trait
 pub trait Transport {
@@ -15,6 +18,7 @@ pub trait Transport {
 
     /**************** doip interface ****************/
     fn send_doip_routing_activation(&mut self) -> Result<(), io::Error>;
+    fn send_doip_raw(&mut self, p_data: Vec<u8>) -> Result<(), io::Error>;
     fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Error>;
 }
 
@@ -46,6 +50,10 @@ impl Transport for Diag {
 
     fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
         self.send_doip_routing_activation()
+    }
+
+    fn send_doip_raw(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
+        self.send_doip_raw(p_data)
     }
 
     fn receive_doip(&mut self, timeout: u64) -> Result<Option<Vec<u8>>, io::Error> {
@@ -227,6 +235,22 @@ pub fn send_doip_routing_activation(&mut self) -> Result<(), io::Error> {
                     Err(e)
                 }
             }
+        }
+        None => Err(io::Error::new(
+            io::ErrorKind::NotConnected,
+            "Not connected to any server",
+        )),
+    }
+}
+
+pub fn send_doip_raw(&mut self, p_data: Vec<u8>) -> Result<(), io::Error> {
+    match &mut self.stream {
+        Some(stream) => {
+            //drop tcp stream
+            if let Err(e) = soad::send_tcp(stream, p_data) {
+                return Err(e);
+            }
+            Ok(())
         }
         None => Err(io::Error::new(
             io::ErrorKind::NotConnected,

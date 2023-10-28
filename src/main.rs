@@ -18,8 +18,6 @@ mod utils {
     pub mod parse_config;
     pub mod common;
     pub mod excrypto;
-    #[cfg(feature = "cli")]
-    pub mod cli;
 }
 
 mod executor {
@@ -37,6 +35,11 @@ mod transport {
     pub mod config;
 }
 
+#[cfg(feature = "cli")]
+mod cli {
+    pub mod cli;
+}
+
 #[cfg(feature = "gui")]
 mod gui {
     pub mod gui;
@@ -51,6 +54,6 @@ fn main() {
 
     #[cfg(feature = "cli")]
     {
-        utils::cli::run_cli();
+        cli::cli::run_cli();
     }
 }

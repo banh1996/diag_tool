@@ -16,7 +16,7 @@
 				<label for="tab1"><i class="icon-bolt"></i>Basic</label>
 
 				<input type="radio" name="pcss3t" id="tab2" class="tab-content-2">
-				<label for="tab2"><i class="icon-picture"></i>Advance</label>
+				<label for="tab2"><i class="icon-star"></i>Advance</label>
 
 				<input type="radio" name="pcss3t" id="tab3" class="tab-content-3">
 				<label for="tab3"><i class="icon-cogs"></i>Config</label>
@@ -28,8 +28,10 @@
 					<li class="tab-content tab-content-first typography">
             <h2>Basic commands</h2>
             <div style="display: inline-block;">
-              <input id="ipaddress-txt" placeholder="IP:PORT" />
+              <input id="ipaddress-txt" placeholder="IP-ADDRESS" />
+              <input id="remoteport-txt" placeholder="PORT" />
               <button id="connect-btn" state="disconnected">CONNECT</button>
+              <div class="light"></div>
               <input id="activation-txt" placeholder="0">
               <span style="float: right;">Activation code:</span>
             </div>
@@ -38,53 +40,10 @@
               <button id="senduds-btn">send uds</button>
               <button id="senddoip-btn">send doip</button>
               <input id="doip-cmd" placeholder="type message for doip" />
-              <div id="log-box" placeholder="view message log here">
-              </div>
+              <div id="log-box" placeholder="view message log here"></div>
             </div>
             <div id="response"></div>
-            <script>
-              const ipaddressInput = document.querySelector('#ipaddress-txt')
-              const connectBtn = document.querySelector('#connect-btn')
-              const sendudsBtn = document.querySelector('#senduds-btn')
-              const diagInput = document.querySelector('#diag-cmd')
-              const senddoipBtn = document.querySelector('#senddoip-btn')
-              const doipInput = document.querySelector('#doip-cmd')
-              const logBox = document.querySelector("#log-box");
-              logBox.style.width = "100%";
-              logBox.style.height = "300px";
-              logBox.style.border = "1px solid black";
-              logBox.style.overflowY = "auto";
-
-              function updateResponse(response) {
-                logBox.append( typeof response === 'string' ? response : JSON.stringify(response))
-              }
-
-              connectBtn.addEventListener('click', () => {
-                connectBtn.setAttribute("state", "connected");
-                window.__TAURI__
-                  .invoke('connect')
-                  .then(updateResponse)
-                  .catch(updateResponse)
-              })
-
-              sendudsBtn.addEventListener('click', () => {
-                window.__TAURI__
-                  .invoke('senduds', {
-                    value: diagInput.value
-                  })
-                  .then(updateResponse)
-                  .catch(updateResponse)
-              })
-
-              senddoipBtn.addEventListener('click', () => {
-                window.__TAURI__
-                  .invoke('senddoip', {
-                    value: doipInput.value
-                  })
-                  .then(updateResponse)
-                  .catch(updateResponse)
-              })
-            </script>
+            <script src="basic.js" defer></script>
 					</li>
 
 					<li class="tab-content tab-content-2 typography">
@@ -113,33 +72,50 @@
 
 					<li class="tab-content tab-content-3 typography">
 						<h3>ECU parameters</h3>
+            <div>
+              <input id="SGAaddr-txt" placeholder="SGA-addr (doip)" />
+            </div>
 						<div>
-              <input id="ECUaddr" placeholder="ECU-addr (doip)" />
+              <input id="ECUaddr-txt" placeholder="ECU-addr (doip)" />
             </div>
             <div>
-              <input id="Testeraddr" placeholder="Tester-addr (doip)" />
+              <input id="Testeraddr-txt" placeholder="Tester-addr (doip)" />
             </div>
             <div>
-              <input id="doipversion" placeholder="version (doip)" />
+              <select class="doip-select" id="doipversion">
+                <option value="ISO13400_2">ISO 13400-2:2019</option>
+                <option value="ISO13400_3">ISO 13400-3:2016</option>
+              </select>
             </div>
-            <select class="vendor-select" id="vendor">
-              <option value="common">🔵 common</option>
-              <option value="volvo">⚪ Volvo</option>
-              <option value="vinfast">⚫ Vinfast</option>
-              <!-- <option value="purple">🟣 Purple</option>
-              <option value="orange">🟠 Orange</option>
-              <option value="red">🔴 Red</option>
-              <option value="green">🟢 Green</option>
-              <option value="yellow">🟡 Yellow</option>
-              <option value="brown">🟤 Brown</option> -->
-            </select>
+            <div>
+              <select class="vendor-select" id="vendor">
+                <option value="common">🔵 common</option>
+                <option value="volvo">⚪ Volvo</option>
+                <option value="vinfast">⚫ Vinfast</option>
+                <!-- <option value="purple">🟣 Purple</option>
+                <option value="orange">🟠 Orange</option>
+                <option value="red">🔴 Red</option>
+                <option value="green">🟢 Green</option>
+                <option value="yellow">🟡 Yellow</option>
+                <option value="brown">🟤 Brown</option> -->
+              </select>
+            </div>
+            <p>Import config file</p>
+            <input type="file" id="fileconfig-button" title="files"></input>
+            <script>
+              const vendorSelect = document.querySelector('#vendor');
+              const doipversionSelect = document.querySelector('#doipversion');
+              const SGAaddrInput = document.querySelector('#SGAaddr-txt');
+              const ECUaddrInput = document.querySelector('#ECUaddr-txt');
+              const TesteraddrInput = document.querySelector('#Testeraddr-txt');
+            </script>
 					</li>
 
 					<li class="tab-content tab-content-last typography">
 						<div class="typography">
 							<p>Author: Trần Ngọc Hùng</p>
 							<p>Embedded Engineer</p>
-							<p>Nothing special, work for fun.</p>
+							<p>Work for money.</p>
 						  <p class="text-right"><em>Check another projects at my github <a href="https://github.com/banh1996" target="_blank">banh1996</a>.</em></p>		
 						</div>
 					</li>

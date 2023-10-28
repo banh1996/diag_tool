@@ -101,3 +101,34 @@ pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, hex::FromHexErro
     let hex_string_without_prefix = hex_string.trim_start_matches("0x");
     hex::decode(hex_string_without_prefix)
 }
+
+
+/*****************************************************************************************************************
+ *  utils::common::hex_to_u16 function
+ *  brief      Function to convert hex string to u16
+ *  details    Example: "0x1122" -> 0x1122, "1122" -> 0x1122
+ *  \param[in]  hex_string: refer to hex string
+ *  \param[out] -
+ *  \precondition -
+ *  \reentrant:  TRUE
+ *  \return     u16, 0 if error
+ ****************************************************************************************************************/
+pub fn hex_to_u16(hex_string: &str) -> u16 {
+    // Remove the leading "0x" if it exists.
+    let hex_string_without_prefix = hex_string.trim_start_matches("0x");
+    let mut hex_bytes = Vec::new();
+    match hex::decode(hex_string_without_prefix) {
+        Ok(bytes) => {
+            hex_bytes.extend(bytes);
+        }
+        Err(e) => {
+            println!("Error: {}", e);
+            return 0;
+        }
+    }
+    // Convert the hex string to a u16.
+    if hex_bytes.len() < 2{
+        return 0;
+    }
+    u16::from_be_bytes([hex_bytes[0], hex_bytes[1]])
+}

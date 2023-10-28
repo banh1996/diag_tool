@@ -140,10 +140,60 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     }
                 }
                 Value::Array(multiple_actions) => {
-                    debug!("Not allow Multiple Actions in socket object:");
-                    for action in multiple_actions {
-                        if let Value::String(action_string) = action {
-                            debug!("{}", action_string);
+                    // Handle Value::Array case
+                    let mut action_vecs: Vec<Vec<u8>> = Vec::new();
+                    for action_str in multiple_actions.iter() {
+                        if let Some(action) = action_str.as_str() {
+                            let trimmed_value = action.replace(" ", "");
+                            let parsed_action: Vec<u8> = trimmed_value
+                                .chars()
+                                .collect::<Vec<char>>()
+                                .chunks(2)
+                                .map(|chunk| {
+                                    let hex_str: String = chunk.iter().collect();
+                                    u8::from_str_radix(&hex_str, 16).unwrap_or(0)
+                                })
+                                .collect();
+                            action_vecs.push(parsed_action);
+                        }
+                    }
+                    // Now 'action_vecs' contains the parsed Vec<u8> for multiple actions
+                    for (i, action) in action_vecs.iter().enumerate() {
+                        let hex_action: Vec<String> = action.iter().map(|&x| format!("0x{:02X}", x)).collect();
+                        let u8_action = utils::common::vec_hex_strings_to_u8(&hex_action);
+                        let clone_u8_action = u8_action.clone();
+                        match stream.send_doip_raw(u8_action) {
+                            Ok(()) => {}
+                            Err(err) => {
+                                eprintln!("Failed to send diag data: {}", err);
+                                return Err(err);
+                            }
+                        }
+                        match stream.receive_doip(timeout) {
+                            //Ok(Some(data)) => debug!("Receive doip data {:02X?} successfully!", data),
+                            Ok(None) => {debug!("Doip received none packet!");}
+                            Ok(Some(data)) => {
+                                // Access the "expect" array
+                                if let Some(expect_array) = item.expect.as_array() {
+                                    if i < expect_array.len() {
+                                        // Access the "expect" value at the specified index
+                                        let expect_value = &expect_array[i];
+                                        // Check if the value is a string
+                                        if let Some(expect_str) = expect_value.as_str() {
+                                            debug!("{:?} ",  format!("Sent {:02X?}, Expect at index {}: {}, Received {:02X?}", clone_u8_action, i, expect_str, data));
+                                            if utils::common::compare_expect_value(expect_str, data) == false {
+                                                return Err(Error::new(ErrorKind::InvalidData, "Diag data received is not expected"));
+                                            }
+                                        } else {
+                                            eprintln!("Value at index {} is not a string.", i);
+                                            return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                                        }
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                return Err(err);
+                            }
                         }
                     }
                 }

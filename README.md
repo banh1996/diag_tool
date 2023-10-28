@@ -13,9 +13,9 @@ For Window, download and install cargo at https://win.rustup.rs/</br>
 ## Build
 There are 2 modes for building, 1 for GUI application and 1 for CLI. Open cmd/terminal and use 1 command below:</br>
 cargo build --no-default-features --features "cli" --release</br>
-cargo build --no-default-features --features "cli" --debug</br>
+cargo build --no-default-features --features "cli"</br>
 cargo build --features "gui" --release</br>
-cargo build --features "gui" --debug</br>
+cargo build --features "gui"</br>
 
 ## Execute
 ./target/debug/diag_tool --debug --config json/config.json --sequence json/sequence.json
