@@ -122,6 +122,11 @@ pub fn parse_vbf(mut stream: std::sync::MutexGuard<transport::diag::Diag>,
     debug!("sw_signature_dev: {:?}", sw_signature_dev);
     debug!("file_checksum: {:?}", file_checksum);
 
+    //verify parameters
+    if ecu_address == "" || verification_block_start == "" || verification_block_length == "" {
+        return Err(Error::new(ErrorKind::InvalidData, "Parse vbf file error"));
+    }
+
     //send erase memory
     if !erase_start_addr.is_empty() && !erase_length_addr.is_empty() {
         let mut byte_vector: Vec<u8> = vec![0x31, 0x01, 0xff, 0x00];

@@ -3,6 +3,7 @@ use log::debug;
 use std::sync::{Arc, Mutex};
 use serde_json::{self, Value};
 use std::env;
+use serde_json::json;
 
 use crate::executor::executor::Executor;
 use crate::executor::parameters::SequenceItem;
@@ -11,10 +12,13 @@ use crate::utils; // Import the parse config module
 use crate::transport::diag;
 use crate::transport::config::{Config, Ethernet, Doip, CONFIG};
 
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use std::path::PathBuf;
+use tauri::api::dialog::blocking::FileDialogBuilder;
 
 // use tauri::State;
 // use tauri::Window;
+// use tauri::api::dialog;
 
 // struct Counter(AtomicUsize);
 
@@ -23,8 +27,8 @@ enum GUIError {
     Error
 }
 
-#[derive(Default)]
-struct Database(Arc<Mutex<HashMap<String, String>>>);
+// #[derive(Default)]
+// struct Database(Arc<Mutex<HashMap<String, String>>>);
 
 lazy_static::lazy_static! {
     static ref EXECUTOR_OBJ: Arc<Mutex<Executor>> = Arc::new(Mutex::new(Executor::create_executor(Arc::new(Mutex::new(diag::create_diag())))));
@@ -189,11 +193,65 @@ fn senddoip(value: String) {
     }
 }
 
+lazy_static::lazy_static! {
+    static ref SWDLPATHS: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
+}
 
 #[tauri::command]
-fn parse(input: String) {
-    println!("got {}", input);
+fn flash() {
+    let paths =  SWDLPATHS.lock().unwrap();
+    for path in paths.iter() {
+        println!("flashing {:?}", path);
+        let config = CONFIG.read().unwrap();
+        let mut action_value: Value = Value::Null;
+        let action_str = format!(r#"["path:{}", "format:vbf"]"#, path.display().to_string().replace("\\", "\\\\"));
+
+        let result: Result<Value, serde_json::Error> = serde_json::from_str(action_str.as_str());
+        match result {
+            Ok(parsed_json) => {
+                action_value = parsed_json;
+            }
+            Err(e) => {
+                println!("Error parsing swdl action: {}", e);
+            }
+        }
+
+        let item = SequenceItem {
+            name: String::from("swdl"),
+            description: String::from("download vbf file"),
+            action: action_value,
+            expect: Value::Array(vec![
+                Value::String(String::from("*")),
+            ]),
+            timeout: String::from("10s"),
+            fail: String::from(""),
+        };
+
+        match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
+            Ok(()) => debug!("Command executed successfully!"),
+            Err(err) => {
+                eprintln!("Error executing command: {}, STOP", err);
+            }
+        }
+    }
 }
+
+#[tauri::command]
+async fn selectswdlfiles() { // Note the async fn
+    let dialog_result = FileDialogBuilder::new().pick_files();
+    SWDLPATHS.lock().unwrap().clear();
+    match dialog_result {
+        Some(paths) => {
+            for path in paths {
+                let path: PathBuf = PathBuf::from(path);
+                println!("Selected files: {:?}", path);
+                SWDLPATHS.lock().unwrap().push(path);
+            }
+        },
+        None => println!("User closed the folder dialog."),
+    }
+}
+
 
 pub fn run_gui() {
     /* Setup */
@@ -203,17 +261,17 @@ pub fn run_gui() {
 
     /* Run GUI */
     tauri::Builder::default()
-    //.manage(Counter(AtomicUsize::new(0)))
-    .manage(Database(Default::default()))
+    // .manage(Database(Default::default()))
     .invoke_handler(tauri::generate_handler![
         senduds,
         senddoip,
-        parse,
+        flash,
+        selectswdlfiles,
         connect,
         disconnect
     ])
-    .run(tauri::generate_context!(
-        "src/gui/frontend/tauri.conf.json"
-    ))
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!("src/gui/frontend/tauri.conf.json"))
+    .expect("error while running tauri application")
+    .run(|_app, _event| {})
 }
+

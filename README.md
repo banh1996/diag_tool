@@ -7,7 +7,7 @@ Should work on both Linux&Windows
 ![main_flow](documents/main_flow.jpg)
 
 ## Setup
-For Linux/MacOS install cargo by "curl https://sh.rustup.rs -sSf | sh"</br>
+For Linux/MacOS install cargo by "curl https://sh.rustup.rs -sSf | sh". Install some dependencies if needed</br>
 For Window, download and install cargo at https://win.rustup.rs/</br>
 
 ## Build
@@ -25,26 +25,22 @@ cargo build --features "gui"</br>
 
 ## <span style="color: green;">TODO list</span>
 
-<summary><s>Work well in Linux</s></summary>
-<summary><s>Work well in Window</s></summary>
-<summary><s>Parse json configuration file</s></summary>
-<summary><s>Check json configuration parameters before execute</s></summary>
-<summary><s>Parse json sequence file</s></summary>
-<summary><s>full-sequence for SWDL</s></summary>
-<summary>Support SWDL for hex, S37, vbf format</summary>
-<summary><s>Support tester-present feature</s></summary>
+<summary><s>Work well in Linux&Window</s></summary>
+<summary><s>Support run Diagnostic sequence</s></summary>
+<summary><s>Support Security-Access Diag</s></summary>
+<summary><s>Support SWDL for hex, S37, vbf format</s></summary>
+<summary><s>Support send tester-present cyclic feature</s></summary>
 <summary>Lock json folder by password to protect sensitive data (OEM keys)</summary>
-<summary><s>Execute CLI cmd from terminal (send diag cmd)</s></summary>
+<summary><s>Support execute CLI cmd from terminal (send diag cmd)</s></summary>
 <summary>Support IPv6</summary>
 <summary><s>Support Debug-log</s></summary>
-<summary><s>Support option argument</s></summary>
 <summary>Full-compliance for ISO13400</summary>
 <summary>Full-compliance for ISO14229-1 3rd</summary>
 <summary>Support TLS for DoIp layer</summary>
 <summary><s>Support GUI</s></summary>
 <summary>Calculate response time</summary>
 <summary>Handle error code</summary>
-<summary>Support to export test report</summary>
+<summary>Support to export test report for sequence</summary>
 
 ## <span style="color: orange;">DEMO</span>
 

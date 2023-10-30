@@ -238,6 +238,19 @@
           "description": "MacOS private API configuration. Enables the transparent background API and sets the `fullScreenEnabled` preference to `true`.",
           "default": false,
           "type": "boolean"
+        },
+        "allowlist": {
+          "description": "The allowlist configuration.",
+          "default": {
+            "dialog": {
+              "all": true,
+              "ask": true,
+              "confirm": true,
+              "message": true,
+              "open": true,
+              "save": true
+            }
+          }
         }
       },
       "additionalProperties": false

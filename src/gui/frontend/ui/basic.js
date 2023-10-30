@@ -98,3 +98,40 @@ function disconnect() {
         console.log('Disconnection error:', error);
     });
 }
+
+
+//Import config parameters
+const reader = new FileReader();
+fileconfigInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    reader.onload = function() {
+        const configData = JSON.parse(reader.result);
+        // Update the values of the other input elements.
+        document.getElementById('ipaddress-txt').value = configData.ethernet.remote_ip;
+        document.getElementById('remoteport-txt').value = configData.ethernet.remote_port;
+        document.getElementById('vendor').value = configData.ethernet.vendor;
+        document.getElementById('Testeraddr-txt').value = configData.doip.tester_addr;
+        document.getElementById('ECUaddr-txt').value = configData.doip.ecu_addr;
+        document.getElementById('SGAaddr-txt').value = configData.doip.sga_addr;
+        document.getElementById('activation-txt').value = configData.doip.activation_code;
+        if (configData.doip.version == "0x2") {
+            document.getElementById('doipversion').value = "ISO13400_2";
+        }
+    };
+    reader.readAsText(file);
+});
+
+//Import SWDL file
+//const filePath = fileswdlButton.files[0].name;
+flashBtn.addEventListener('click', () => {
+    window.__TAURI__
+        .invoke('flash')
+        .then(updateResponse)
+        .catch(updateResponse)
+})
+
+
+fileswdlInput.addEventListener('click', () => {
+    window.__TAURI__
+        .invoke('selectswdlfiles')
+})

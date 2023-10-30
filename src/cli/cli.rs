@@ -65,7 +65,7 @@ pub fn parse(executor_obj: Arc<Mutex<Executor>>, input: &str) -> Result<(), io::
                     action_value = parsed_json;
                 }
                 Err(e) => {
-                    println!("Error parsing securityaccess action: {}", e);
+                    println!("Error parsing swdl action: {}", e);
                 }
             }
         }

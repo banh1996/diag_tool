@@ -48,7 +48,7 @@
 
 					<li class="tab-content tab-content-2 typography">
 						<h3>SWDL</h3>
-            <input type="file" id="fileswdl-button" title="files"></input>
+            <button id="fileswdl-button">select softwares files</button>
             <button id="flash-btn">flash</button>
             <h3>Sequence</h3>
             <input type="file" id="sequence-button" title="files"></input>
@@ -58,41 +58,39 @@
             <input id="SAkey" placeholder="type security-access key" />
             <button id="sendSA-btn">send</button>
 						<script>
-              const fileswdlButton = document.querySelector("#fileswdl-button");
-              fileswdlButton.addEventListener("change", () => {
-                window.__TAURI__
-                  .invoke('parse', {
-                    input: fileswdlButton.files[0].path
-                  })
-                  .then(updateResponse)
-                  .catch(updateResponse)
-              });
+              const fileswdlInput = document.querySelector('#fileswdl-button');
+              const flashBtn = document.querySelector('#flash-btn')
             </script>
 					</li>
 
 					<li class="tab-content tab-content-3 typography">
 						<h3>ECU parameters</h3>
             <div>
-              <input id="SGAaddr-txt" placeholder="SGA-addr (doip)" />
-            </div>
-						<div>
-              <input id="ECUaddr-txt" placeholder="ECU-addr (doip)" />
+              <label for="SGAaddr-txt">SGA-addr-doip:</label>
+              <input id="SGAaddr-txt" placeholder="Enter SGA address" />
             </div>
             <div>
-              <input id="Testeraddr-txt" placeholder="Tester-addr (doip)" />
+              <label for="ECUaddr-txt">ECU-addr-doip:</label>
+              <input id="ECUaddr-txt" placeholder="Enter ECU address" />
             </div>
             <div>
+              <label for="Testeraddr-txt">Tester-addr-doip:</label>
+              <input id="Testeraddr-txt" placeholder="Enter Tester address" />
+            </div>
+            <div>
+              <label for="doipversion">Doip-Version:</label>
               <select class="doip-select" id="doipversion">
                 <option value="ISO13400_2">ISO 13400-2:2019</option>
                 <option value="ISO13400_3">ISO 13400-3:2016</option>
               </select>
             </div>
             <div>
+              <label for="vendor">Vendor:</label>
               <select class="vendor-select" id="vendor">
-                <option value="common">🔵 common</option>
-                <option value="volvo">⚪ Volvo</option>
+                <option value="common">⚪ common</option>
+                <option value="volvo">🔵 Volvo</option>
                 <option value="vinfast">⚫ Vinfast</option>
-                <!-- <option value="purple">🟣 Purple</option>
+                <!-- <option value="audi">🟣 Audi</option>
                 <option value="orange">🟠 Orange</option>
                 <option value="red">🔴 Red</option>
                 <option value="green">🟢 Green</option>
@@ -100,6 +98,9 @@
                 <option value="brown">🟤 Brown</option> -->
               </select>
             </div>
+            <p>Enable Tester-Present</p>
+            <input type="checkbox" id="testerpresent-checkbox" />
+            <input id="TesterpresentInterval-txt" placeholder="Interval-3s" />
             <p>Import config file</p>
             <input type="file" id="fileconfig-button" title="files"></input>
             <script>
@@ -108,6 +109,7 @@
               const SGAaddrInput = document.querySelector('#SGAaddr-txt');
               const ECUaddrInput = document.querySelector('#ECUaddr-txt');
               const TesteraddrInput = document.querySelector('#Testeraddr-txt');
+              const fileconfigInput = document.getElementById('fileconfig-button');
             </script>
 					</li>
 

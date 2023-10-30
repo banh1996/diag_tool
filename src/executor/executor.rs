@@ -300,6 +300,9 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                         }
                     }
                 }
+                else {
+                    return Err(Error::new(ErrorKind::InvalidInput, "Not support thí vendor"));
+                }
             } else {
                 eprintln!("Invalid security name format: {}", s);
                 return Err(Error::new(ErrorKind::InvalidInput, "Invalid security name format"));
@@ -313,7 +316,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     //get swdl parameters in action item
                     for action_str in multiple_actions.iter() {
                         if let Some(action) = action_str.as_str() {
-                            let parts: Vec<&str> = action.split(':').collect();
+                            let parts: Vec<&str> = action.splitn(2, ':').collect();
                             if parts.len() == 2 {
                                 match parts[0] {
                                     "path" => sw_file_path = parts[1],
@@ -321,11 +324,15 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                     _ => (),
                                 }
                             }
+                            else {
+                                eprintln!("SWDL: parameter number is not match 2");
+                                return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+                            }
                         }
                     }
                 }
                 _ => {
-                    eprintln!("Not enough parameters");
+                    eprintln!("SWDL: Not enough parameters");
                     return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
                 }
             }
@@ -334,6 +341,10 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     Ok(()) => {}
                     Err(err) => return Err(err)
                 }
+            }
+            else {
+                eprintln!("SWDL: file format not support");
+                return Err(Error::new(ErrorKind::InvalidData, "software file format not support"));
             }
         }
         "delay" => {
