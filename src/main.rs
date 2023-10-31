@@ -4,17 +4,18 @@ extern crate log;
 extern crate serde_json;
 extern crate serde;
 extern crate rand;
-
 extern crate cmac;
 extern crate aes;
 extern crate cipher;
 extern crate ctr;
 extern crate hex;
 
+
 #[cfg(feature = "gui")]
 extern crate tauri;
 
 mod utils {
+    #[cfg(feature = "cli")]
     pub mod parse_config;
     pub mod common;
     pub mod excrypto;

@@ -122,7 +122,6 @@ fileconfigInput.addEventListener('change', function(event) {
 });
 
 //Import SWDL file
-//const filePath = fileswdlButton.files[0].name;
 flashBtn.addEventListener('click', () => {
     window.__TAURI__
         .invoke('flash')
@@ -130,8 +129,19 @@ flashBtn.addEventListener('click', () => {
         .catch(updateResponse)
 })
 
-
 fileswdlInput.addEventListener('click', () => {
     window.__TAURI__
         .invoke('selectswdlfiles')
+})
+
+executeBtn.addEventListener('click', () => {
+    window.__TAURI__
+        .invoke('executesequence')
+        .then(updateResponse)
+        .catch(updateResponse)
+})
+
+filesequenceInput.addEventListener('click', () => {
+    window.__TAURI__
+        .invoke('selectsequencefile')
 })

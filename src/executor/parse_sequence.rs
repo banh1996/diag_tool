@@ -1,7 +1,7 @@
 use log::debug;
 use std::sync::{Arc, Mutex};
 use std::fs::File;
-use std::io::{self, Read};
+use std::io::{self, Read, Error, ErrorKind};
 
 use crate::executor::parameters::{Parameters, PARAMETERS, Sequence};
 use crate::executor::executor::Executor;
@@ -21,12 +21,29 @@ pub fn parse(sequence_filename: String, executor_obj: Arc<Mutex<Executor>>) -> R
     let config = CONFIG.read().unwrap();
 
     // Read the JSON file
-    let mut file = File::open(&sequence_filename).expect("Failed to open config file");
     let mut json_contents = String::new();
-    file.read_to_string(&mut json_contents).expect("Failed to read file");
+    match File::open(&sequence_filename) {
+        Ok(mut file) => {
+            file.read_to_string(&mut json_contents).expect("Failed to read file");
+            if let Err(err) = file.read_to_string(&mut json_contents) {
+                eprintln!("Failed to read file: {}", err);
+                return Err(Error::new(ErrorKind::InvalidData, "Cannot read sequence file"));
+            }
+        }
+        Err(err) => {
+            eprintln!("Failed to open config file: {}", err);
+            return Err(Error::new(ErrorKind::NotFound, "Not found sequence file"));
+        }
+    };
 
     // Deserialize the JSON content
-    let seq_obj: Sequence = serde_json::from_str(&json_contents).expect("Failed to parse JSON");
+    let seq_obj: Sequence = match serde_json::from_str(&json_contents) {
+        Ok(obj) => obj,
+        Err(err) => {
+            eprintln!("Failed to parse JSON: {}", err);
+            return Err(Error::new(ErrorKind::InvalidData, "wrong sequence json format"));
+        }
+    };
 
     debug!("Sequence Parameter: {:#?}", seq_obj.parameter);
 

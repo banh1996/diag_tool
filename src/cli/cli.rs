@@ -163,7 +163,7 @@ pub fn run_cli() {
                 }
             };
         } else {
-            eprintln!("Error: --sequence option is required");
+            eprintln!("Info: you can select sequence with --sequence option");
             print_usage(&args[0], &opts);
         }
     });

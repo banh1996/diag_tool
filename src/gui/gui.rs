@@ -3,24 +3,22 @@ use log::debug;
 use std::sync::{Arc, Mutex};
 use serde_json::{self, Value};
 use std::env;
-use serde_json::json;
+// use serde_json::json;
 
 use crate::executor::executor::Executor;
 use crate::executor::parameters::SequenceItem;
 use crate::utils; // Import the parse config module
-//use crate::executor::parse_sequence; // Import the parse sequence module
+use crate::executor::parse_sequence;
 use crate::transport::diag;
 use crate::transport::config::{Config, Ethernet, Doip, CONFIG};
 
-// use std::collections::HashMap;
 use std::path::PathBuf;
 use tauri::api::dialog::blocking::FileDialogBuilder;
+// use std::collections::HashMap;
 
 // use tauri::State;
 // use tauri::Window;
 // use tauri::api::dialog;
-
-// struct Counter(AtomicUsize);
 
 #[derive(Debug, serde::Serialize)]
 enum GUIError {
@@ -32,12 +30,13 @@ enum GUIError {
 
 lazy_static::lazy_static! {
     static ref EXECUTOR_OBJ: Arc<Mutex<Executor>> = Arc::new(Mutex::new(Executor::create_executor(Arc::new(Mutex::new(diag::create_diag())))));
+    static ref SWDLPATHS: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
+    static ref SEQUENCEPATH: Arc<Mutex<PathBuf>> = Arc::new(Mutex::new(PathBuf::new()));
 }
 
 
-
 #[tauri::command]
-fn connect( remoteip: String,
+async fn connect( remoteip: String,
             port: String,
             role: String,
             vendor: String,
@@ -47,8 +46,18 @@ fn connect( remoteip: String,
             sgaaddr: String,
             activationcode: String)
     -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
     //Parse config
-    println!("connect: {} {} {} {} {} {} {} {} {}",
+    debug!("connect with parameters: {} {} {} {} {} {} {} {} {}",
     remoteip, port, role, vendor, doipversion, testeraddr, ecuaddr, sgaaddr, activationcode);
     *CONFIG.write().expect("Failed to acquire write lock") = Config {
         ethernet: Ethernet {
@@ -119,19 +128,28 @@ fn connect( remoteip: String,
 
 
 #[tauri::command]
-fn disconnect() -> Result<(), GUIError> {
-    let config = CONFIG.read().unwrap();
-    let item = SequenceItem {
-    name: String::from("socket"),
-    description: String::from("disconnect"),
-    action: Value::String(String::from("disconnect")),
-    expect: Value::Array(vec![
-        Value::String(String::from("*")),
-    ]),
-    timeout: String::from("10s"),
-    fail: String::from(""),
+async fn disconnect() -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
     };
 
+    let config = CONFIG.read().unwrap();
+    let item = SequenceItem {
+        name: String::from("socket"),
+        description: String::from("disconnect"),
+        action: Value::String(String::from("disconnect")),
+        expect: Value::Array(vec![
+            Value::String(String::from("*")),
+        ]),
+        timeout: String::from("10s"),
+        fail: String::from(""),
+    };
     match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
         Ok(()) => debug!("Command executed successfully!"),
         Err(err) => {
@@ -144,7 +162,17 @@ fn disconnect() -> Result<(), GUIError> {
 
 
 #[tauri::command]
-fn senduds(value: String) -> Result<String, GUIError> {
+async fn senduds(value: String) -> Result<String, GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
     let config = CONFIG.read().unwrap();
     let action_value = Value::Array(vec![Value::String(String::from(value))]);
     let item = SequenceItem {
@@ -157,7 +185,6 @@ fn senduds(value: String) -> Result<String, GUIError> {
         timeout: String::from("10s"),
         fail: String::from(""),
     };
-
     match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
         Ok(()) => {
             debug!("Command executed successfully!");
@@ -171,7 +198,17 @@ fn senduds(value: String) -> Result<String, GUIError> {
 }
 
 #[tauri::command]
-fn senddoip(value: String) {
+async fn senddoip(value: String) -> Result<String, GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
     let config = CONFIG.read().unwrap();
     let action_value = Value::Array(vec![Value::String(String::from(value))]);
     let item = SequenceItem {
@@ -184,67 +221,85 @@ fn senddoip(value: String) {
         timeout: String::from("10s"),
         fail: String::from(""),
     };
-
     match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
-        Ok(()) => debug!("Command executed successfully!"),
+        Ok(()) => {
+            debug!("Command executed successfully!");
+            Ok("senddoip successfully".to_string())
+        }
         Err(err) => {
             eprintln!("Error executing command: {}, STOP", err);
+            Err(GUIError::Error)
         }
     }
 }
 
-lazy_static::lazy_static! {
-    static ref SWDLPATHS: Arc<Mutex<Vec<PathBuf>>> = Arc::new(Mutex::new(Vec::new()));
-}
-
 #[tauri::command]
-fn flash() {
+async fn flash() -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
     let paths =  SWDLPATHS.lock().unwrap();
     for path in paths.iter() {
         println!("flashing {:?}", path);
         let config = CONFIG.read().unwrap();
-        let mut action_value: Value = Value::Null;
         let action_str = format!(r#"["path:{}", "format:vbf"]"#, path.display().to_string().replace("\\", "\\\\"));
-
         let result: Result<Value, serde_json::Error> = serde_json::from_str(action_str.as_str());
         match result {
-            Ok(parsed_json) => {
-                action_value = parsed_json;
+            Ok(action_value) => {
+                let item = SequenceItem {
+                    name: String::from("swdl"),
+                    description: String::from("download vbf file"),
+                    action: action_value,
+                    expect: Value::Array(vec![
+                        Value::String(String::from("*")),
+                    ]),
+                    timeout: String::from("10s"),
+                    fail: String::from(""),
+                };
+                match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
+                    Ok(()) => debug!("Command executed successfully!"),
+                    Err(err) => {
+                        eprintln!("Error executing command: {}, STOP", err);
+                        return Err(GUIError::Error);
+                    }
+                }
             }
             Err(e) => {
                 println!("Error parsing swdl action: {}", e);
-            }
-        }
-
-        let item = SequenceItem {
-            name: String::from("swdl"),
-            description: String::from("download vbf file"),
-            action: action_value,
-            expect: Value::Array(vec![
-                Value::String(String::from("*")),
-            ]),
-            timeout: String::from("10s"),
-            fail: String::from(""),
-        };
-
-        match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
-            Ok(()) => debug!("Command executed successfully!"),
-            Err(err) => {
-                eprintln!("Error executing command: {}, STOP", err);
+                return Err(GUIError::Error);
             }
         }
     }
+
+    Ok(())
 }
 
 #[tauri::command]
-async fn selectswdlfiles() { // Note the async fn
+async fn selectswdlfiles() {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return;
+        }
+    };
+
     let dialog_result = FileDialogBuilder::new().pick_files();
     SWDLPATHS.lock().unwrap().clear();
     match dialog_result {
         Some(paths) => {
             for path in paths {
                 let path: PathBuf = PathBuf::from(path);
-                println!("Selected files: {:?}", path);
+                println!("Selected swdl-file: {:?}", path);
                 SWDLPATHS.lock().unwrap().push(path);
             }
         },
@@ -252,6 +307,75 @@ async fn selectswdlfiles() { // Note the async fn
     }
 }
 
+#[tauri::command]
+async fn executesequence() -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
+    let path =  SEQUENCEPATH.lock().unwrap();
+
+    match parse_sequence::parse(path.display().to_string(), EXECUTOR_OBJ.clone()) {
+        Ok(()) => {}
+        Err(err) => {
+            eprintln!("Error reading sequence file {}", err);
+            return Err(GUIError::Error);
+        }
+    };
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn selectsequencefile() {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return;
+        }
+    };
+
+    let dialog_result = FileDialogBuilder::new().pick_file();
+    SEQUENCEPATH.lock().unwrap().clear();
+    match dialog_result {
+        Some(path) => {
+            let path: PathBuf = PathBuf::from(path);
+            println!("Selected sequence-file: {:?}", path);
+            SEQUENCEPATH.lock().unwrap().push(path);
+        },
+        None => println!("User closed the folder dialog."),
+    }
+}
+
+/* for testing
+use std::time::Duration;
+use std::thread;
+#[tauri::command]
+async fn testdelay() {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    println!("before called this");
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            println!("exit this");
+            return;
+        }
+    };
+    println!("after called this");
+    thread::sleep(Duration::from_secs(10));
+}
+*/
 
 pub fn run_gui() {
     /* Setup */
@@ -263,12 +387,14 @@ pub fn run_gui() {
     tauri::Builder::default()
     // .manage(Database(Default::default()))
     .invoke_handler(tauri::generate_handler![
+        connect,
+        disconnect,
         senduds,
         senddoip,
-        flash,
         selectswdlfiles,
-        connect,
-        disconnect
+        selectsequencefile,
+        flash,
+        executesequence
     ])
     .build(tauri::generate_context!("src/gui/frontend/tauri.conf.json"))
     .expect("error while running tauri application")
