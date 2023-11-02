@@ -398,7 +398,19 @@ async fn sendsecurityaccess(level: String, key: String) -> Result<(), GUIError> 
     };
 
     let config = CONFIG.read().unwrap();
-    let name = format!("securityaccess_{:02}", level.parse::<u16>().unwrap());
+    let name: String;
+    if !level.is_empty() && level.chars().all(|c| c.is_digit(16)) {//check level string should not empty and contain hex only
+        //name = format!("securityaccess_{:02X}", level.parse::<u16>().unwrap());
+        if let Ok(level_value) = u16::from_str_radix(&level, 16) {
+            name = format!("securityaccess_{:02X}", level_value);
+        } else {
+            return Err(GUIError::Error);
+        }
+    }
+    else {
+        eprintln!("Error key or level format, STOP");
+        return Err(GUIError::Error);
+    }
     let action_str: String = format!(r#"["algorithm:AES128", "iv:random", "encryption_authentication_key:{}", "proof_of_ownership_key:{}"]"#, key, key);
     let result: Result<Value, serde_json::Error> = serde_json::from_str(action_str.as_str());
     match result {
@@ -422,7 +434,7 @@ async fn sendsecurityaccess(level: String, key: String) -> Result<(), GUIError> 
             }
         }
         Err(e) => {
-            println!("Error parsing security-access action: {}", e);
+            eprintln!("Error parsing security-access action: {}", e);
             return Err(GUIError::Error);
         }
     }

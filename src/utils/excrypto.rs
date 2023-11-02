@@ -7,12 +7,21 @@ use aes::cipher::{KeyIvInit, StreamCipher};
 type Aes128Ctr64LE = ctr::Ctr64LE<aes::Aes128>;
 
 pub fn encrypt_aes128_ctr(data_to_encrypt: &[u8], iv_bytes: &[u8], key: &str) -> Result<Vec<u8>, io::Error> {
+    let trimmed_key = if key.starts_with("0x") {
+        key.strip_prefix("0x").unwrap_or(key)
+    } else {
+        key
+    };
+    if iv_bytes.len() != 16 || trimmed_key.len() != 32 {
+        eprintln!("Error: key and iv_bytes should be 16 bytes in length");
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid input lengths"));
+    }
     // Parse the key and iv string into a byte array
     let mut encrypted_data = data_to_encrypt.to_vec();
-    let key_bytes: Vec<u8> = (0..key.len())
+    let key_bytes: Vec<u8> = (0..trimmed_key.len())
         .step_by(2)
         .map(|i| {
-            u8::from_str_radix(&key[i..i + 2], 16)
+            u8::from_str_radix(&trimmed_key[i..i + 2], 16)
                 .expect("Failed to parse hex string")
         })
         .collect();
@@ -28,12 +37,21 @@ pub fn encrypt_aes128_ctr(data_to_encrypt: &[u8], iv_bytes: &[u8], key: &str) ->
 }
 
 pub fn decrypt_aes128_ctr(encrypted_data: &[u8], iv_bytes: &[u8], key: &str) -> Result<Vec<u8>, io::Error> {
+    let trimmed_key = if key.starts_with("0x") {
+        key.strip_prefix("0x").unwrap_or(key)
+    } else {
+        key
+    };
+    if iv_bytes.len() != 16 || trimmed_key.len() != 32 {
+        eprintln!("Error: key and iv_bytes should be 16 bytes in length");
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid input lengths"));
+    }
     // Parse the key and iv string into a byte array
     let mut decrypted_data = encrypted_data.to_vec();
-    let key_bytes: Vec<u8> = (0..key.len())
+    let key_bytes: Vec<u8> = (0..trimmed_key.len())
         .step_by(2)
         .map(|i| {
-            u8::from_str_radix(&key[i..i + 2], 16)
+            u8::from_str_radix(&trimmed_key[i..i + 2], 16)
                 .expect("Failed to parse hex string")
         })
         .collect();
@@ -49,11 +67,20 @@ pub fn decrypt_aes128_ctr(encrypted_data: &[u8], iv_bytes: &[u8], key: &str) -> 
 }
 
 pub fn encrypt_aes128_cmac(data_to_encrypt: &[u8], key: &str) -> Result<Vec<u8>, io::Error> {
+    let trimmed_key = if key.starts_with("0x") {
+        key.strip_prefix("0x").unwrap_or(key)
+    } else {
+        key
+    };
+    if trimmed_key.len() != 32 {
+        eprintln!("Error: key should be 16 bytes in length");
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "Invalid input lengths"));
+    }
     // Parse the key string into a byte array
-    let key_bytes: Vec<u8> = (0..key.len())
+    let key_bytes: Vec<u8> = (0..trimmed_key.len())
         .step_by(2)
         .map(|i| {
-            u8::from_str_radix(&key[i..i + 2], 16)
+            u8::from_str_radix(&trimmed_key[i..i + 2], 16)
                 .expect("Failed to parse hex string")
         })
         .collect();
