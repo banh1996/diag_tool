@@ -130,7 +130,6 @@ pub fn run_cli() {
     /* handle json config file */
     if let Some(config_filename) = matches.opt_str("config") {
         // Read the JSON file into a string
-        //if let Ok() = parse_config::parse(config_filename)
         match utils::parse_config::parse(config_filename) {
             Ok(()) => {
                 debug!("Parse config json done!");

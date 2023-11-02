@@ -14,5 +14,10 @@
         "ecu_addr": "0x1d88",
         "sga_addr": "0x1d24",
         "activation_code": "0"
+    },
+    "parameter": {
+        "vin": "",
+        "tester_present": true,
+        "tester_present_interval": "1000ms"
     }
 }

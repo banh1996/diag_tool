@@ -5,6 +5,7 @@ use std::sync::RwLock;
 pub struct Config {
     pub ethernet: Ethernet,
     pub doip: Doip,
+    pub parameter: Parameters,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -28,6 +29,12 @@ pub struct Doip {
     pub activation_code: u8,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Parameters {
+    pub vin: String,
+    pub tester_present: bool,
+    pub tester_present_interval: String,
+}
 
 lazy_static::lazy_static! {
     pub static ref CONFIG: RwLock<Config> = RwLock::new(Config {
@@ -47,6 +54,11 @@ lazy_static::lazy_static! {
             ecu_addr: 0,
             sga_addr: 0,
             activation_code: 0,
+        },
+        parameter: Parameters{
+            vin: String::new(),
+            tester_present: false,
+            tester_present_interval: String::new(),
         },
     });
 }

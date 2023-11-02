@@ -1,9 +1,4 @@
 {
-    "parameter": {
-        "vin": "",
-        "tester_present": true,
-        "tester_present_interval": "2s"
-    },
     "sequence": [
         {
             "name": "socket",

@@ -1,28 +1,25 @@
-use crate::transport::config::{Config, Ethernet, Doip, CONFIG};
+use crate::transport::config::{Config, Ethernet, Doip, Parameters, CONFIG};
 use std::io::{self, Read, Error, ErrorKind};
 use log::debug;
 use std::fs::File;
 
-
 /*****************************************************************************************************************
- *  utils::parse function
+ *  utils::parse_content function
  *  brief      Parse json file to get config parameters
  *  details    -
- *  \param[in]  config_filename  path to config json file
+ *  \param[in]  content  config json file content
  *  \param[out] -
  *  \precondition -
  *  \reentrant:  FALSE
  *  \return -
  ****************************************************************************************************************/
-pub fn parse(config_filename: String) -> Result<(), io::Error> {
-    // Read the JSON file and update the `CONFIG` global variable
-    let mut file = File::open(&config_filename).expect("Failed to open config file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Failed to read file");
+pub fn parse_content(content: String) -> Result<(), io::Error> {
+    let config_data: serde_json::Value =
+        serde_json::from_str(&content).expect("Failed to parse config.json");
 
     let ethernet: Ethernet = {
-        let config_data: serde_json::Value =
-            serde_json::from_str(&contents).expect("Failed to parse config.json");
+        // let config_data: serde_json::Value =
+        //     serde_json::from_str(&contents).expect("Failed to parse config.json");
         let interface = config_data["ethernet"]["interface"]
             .as_str().expect("Invalid interface field")
             .to_owned();
@@ -48,8 +45,8 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
     };
 
     let doip: Doip = {
-        let config_data: serde_json::Value =
-            serde_json::from_str(&contents).expect("Failed to parse config.json");
+        // let config_data: serde_json::Value =
+        //     serde_json::from_str(&contents).expect("Failed to parse config.json");
         let version_string = config_data["doip"]["version"]
             .as_str().expect("Invalid version field")
             .to_owned();
@@ -126,12 +123,48 @@ pub fn parse(config_filename: String) -> Result<(), io::Error> {
         Doip { version, inverse_version, tester_addr, ecu_addr, sga_addr, activation_code }
     };
 
+    let parameter: Parameters = {
+        let vin_string = config_data["parameter"]["vin"]
+            .as_str().expect("Invalid vin number field")
+            .to_owned();
+        let vin_string = vin_string.trim_start_matches("0x");
+        let tester_present_bool = config_data["parameter"]["tester_present"].
+                                        as_bool().expect("Invalid tester_present field").to_owned();
+        let tester_present_interval_string = config_data["parameter"]["tester_present_interval"].
+                                                     as_str().expect("Invalid interval field").to_owned();
+        Parameters {
+            vin: vin_string.to_string(),
+            tester_present: tester_present_bool,
+            tester_present_interval: tester_present_interval_string
+        }
+    };
+
     // Update the CONFIG global variable
     *CONFIG.write().expect("Failed to acquire write lock") = Config {
         ethernet,
         doip,
+        parameter,
     };
     debug!("Parsed configuration parameters successfully!");
 
     Ok(())
+}
+
+
+/*****************************************************************************************************************
+ *  utils::parse function
+ *  brief      Parse json file to get config parameters
+ *  details    -
+ *  \param[in]  config_filename  path to config json file
+ *  \param[out] -
+ *  \precondition -
+ *  \reentrant:  FALSE
+ *  \return -
+ ****************************************************************************************************************/
+pub fn parse(config_filename: String) -> Result<(), io::Error> {
+    // Read the JSON file and update the `CONFIG` global variable
+    let mut file = File::open(&config_filename).expect("Failed to open config file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("Failed to read file");
+    return parse_content(contents);
 }

@@ -10,23 +10,17 @@ use crate::executor::parameters::SequenceItem;
 use crate::utils; // Import the parse config module
 use crate::executor::parse_sequence;
 use crate::transport::diag;
-use crate::transport::config::{Config, Ethernet, Doip, CONFIG};
+use crate::transport::config::{Config, Ethernet, Doip, Parameters, CONFIG};
 
 use std::path::PathBuf;
 use tauri::api::dialog::blocking::FileDialogBuilder;
-// use std::collections::HashMap;
 
-// use tauri::State;
-// use tauri::Window;
-// use tauri::api::dialog;
 
 #[derive(Debug, serde::Serialize)]
 enum GUIError {
     Error
 }
 
-// #[derive(Default)]
-// struct Database(Arc<Mutex<HashMap<String, String>>>);
 
 lazy_static::lazy_static! {
     static ref EXECUTOR_OBJ: Arc<Mutex<Executor>> = Arc::new(Mutex::new(Executor::create_executor(Arc::new(Mutex::new(diag::create_diag())))));
@@ -34,9 +28,37 @@ lazy_static::lazy_static! {
     static ref SEQUENCEPATH: Arc<Mutex<PathBuf>> = Arc::new(Mutex::new(PathBuf::new()));
 }
 
+#[tauri::command]
+async fn updateconfig(config: serde_json::Value) -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+    let clone_config = config.clone();
+
+    debug!("updateconfig config {:?}", clone_config);
+    let config_string = serde_json::to_string(&config).unwrap();
+    match utils::parse_config::parse_content(config_string) {
+        Ok(()) => {
+            debug!("Parse config json done!");
+        },
+        Err(e) => {
+            eprintln!("parse config file error {}!", e);
+            return Err(GUIError::Error);
+        }
+    }
+
+    Ok(())
+}
+
 
 #[tauri::command]
-async fn connect( remoteip: String,
+async fn connect (remoteip: String,
             port: String,
             role: String,
             vendor: String,
@@ -44,7 +66,9 @@ async fn connect( remoteip: String,
             testeraddr: String,
             ecuaddr: String,
             sgaaddr: String,
-            activationcode: String)
+            activationcode: String,
+            testerpresentenable: bool,
+            testerpresentinterval: String)
     -> Result<(), GUIError> {
     lazy_static::lazy_static! {
         static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
@@ -76,6 +100,11 @@ async fn connect( remoteip: String,
             ecu_addr: utils::common::hex_to_u16(ecuaddr.as_str()),
             sga_addr: utils::common::hex_to_u16(sgaaddr.as_str()),
             activation_code: utils::common::hex_to_u16(activationcode.as_str()) as u8,
+        },
+        parameter: Parameters{
+            vin: String::new(),
+            tester_present: testerpresentenable,
+            tester_present_interval: testerpresentinterval,
         },
     };
 
@@ -401,6 +430,36 @@ async fn sendsecurityaccess(level: String, key: String) -> Result<(), GUIError> 
     Ok(())
 }
 
+#[tauri::command]
+async fn triggertesterpresent(enable: bool, interval: String) -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
+    debug!("Tester-Present event: {} {}", enable, interval);
+
+    if enable == true {
+        match Executor::start_tester_present(EXECUTOR_OBJ.clone(), interval.to_string())  {
+            Ok(()) => debug!("start tester present successfully!"),
+            Err(err) => {
+                eprintln!("Error start tester present: {}, STOP", err);
+                return Err(GUIError::Error);
+            }
+        }
+    }
+    else {
+        EXECUTOR_OBJ.clone().lock().unwrap().stop_tester_present();
+    }
+
+    Ok(())
+}
+
 /* for testing
 use std::time::Duration;
 use std::thread;
@@ -432,6 +491,7 @@ pub fn run_gui() {
     tauri::Builder::default()
     // .manage(Database(Default::default()))
     .invoke_handler(tauri::generate_handler![
+        updateconfig,
         connect,
         disconnect,
         senduds,
@@ -440,7 +500,8 @@ pub fn run_gui() {
         selectsequencefile,
         flash,
         executesequence,
-        sendsecurityaccess
+        sendsecurityaccess,
+        triggertesterpresent
     ])
     .build(tauri::generate_context!("src/gui/frontend/tauri.conf.json"))
     .expect("error while running tauri application")

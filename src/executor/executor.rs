@@ -1,18 +1,20 @@
 use log::debug;
 use std::io::{self, Error, ErrorKind};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use std::thread;
 use serde_json::Value;
 
 use crate::utils;
 use crate::transport;
-use crate::executor::parameters::{PARAMETERS, SequenceItem};
+use crate::executor::parameters::SequenceItem;
 use crate::executor::securityaccess;
 use crate::executor::swdl;
 
 pub struct Executor {
     s_diag_obj: Arc<Mutex<transport::diag::Diag>>,
+    is_enable_tester_present: AtomicBool,
 }
 
 
@@ -37,7 +39,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
         None => debug!("Invalid duration: {}", item.timeout),
     }
 
-    let clone_self_obj = this.clone();
+    //let clone_self_obj = this.clone();
     let self_obj_lock = this.lock().unwrap();
     let mut stream = self_obj_lock.s_diag_obj.lock().unwrap();
     match item.name.as_str() {
@@ -95,40 +97,6 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                                 Ok(Some(data)) => debug!("Receive doip data {:02X?} successfully!", data),
                                 Ok(None) => {
                                     debug!("Doip activation successfully!");
-                                    if PARAMETERS.read().unwrap().tester_present {
-                                        let interval = match utils::common::parse_duration_to_milliseconds(item.timeout.as_str()) {
-                                            Some(temp) => temp,
-                                            None => 1000, //1000ms
-                                        };
-                                        thread::spawn(move || {
-                                            // start tester-present
-                                            debug!("Start tester-present");
-                                            loop {
-                                                {
-                                                    let mu_self_obj = clone_self_obj.lock().unwrap();
-                                                    let byte_vector: Vec<u8> = vec![0x3E, 0x80];
-                                                    let mut mu_diag_obj = mu_self_obj.s_diag_obj.lock().unwrap();
-                                                    match mu_diag_obj.send_diag(byte_vector) {
-                                                        Ok(()) => {}
-                                                        Err(err) => {
-                                                            eprintln!("Failed to send diag tester-present: {}", err);
-                                                            break;
-                                                        }
-                                                    }
-                                                    //suppress reply bit, ignore receive diag data, receive doip ACK
-                                                    match mu_diag_obj.receive_doip(1000) {
-                                                        Ok(Some(_data)) => {}
-                                                        Ok(None) => {}
-                                                        Err(err) => {
-                                                            eprintln!("Failed to Receive doip Ack: {}", err);
-                                                            break;
-                                                        }
-                                                    };
-                                                } //drop-unlock mu_self_obj and mu_diag_obj
-                                                thread::sleep(Duration::from_millis(interval));
-                                            }
-                                        });
-                                    }
                                 }
                                 Err(err) => {
                                     eprintln!("Failed to Receive doip activation: {}", err);
@@ -359,9 +327,63 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
     Ok(())
 }
 
+
+pub fn start_tester_present(this: Arc<Mutex<Executor>>, interval_str: String) -> Result<(), io::Error> {
+    let clone_self_obj = this.clone();
+    let mu_self_obj = this.lock().unwrap();
+    let is_enable_tester_present = mu_self_obj.is_enable_tester_present.load(Ordering::Relaxed);
+    if is_enable_tester_present == false {
+        let interval = match utils::common::parse_duration_to_milliseconds(interval_str.as_str()) {
+            Some(temp) => temp,
+            None => 2000, //2000ms
+        };
+        mu_self_obj.is_enable_tester_present.store(true, Ordering::Relaxed);
+        thread::spawn(move || {
+            // start tester-present
+            loop {
+                {
+                    let mu_clone_self_obj = clone_self_obj.lock().unwrap();
+                    if mu_clone_self_obj.is_enable_tester_present.load(Ordering::Relaxed) == false {
+                        //stop tester-present
+                        break;
+                    }
+                    else {
+                        let byte_vector: Vec<u8> = vec![0x3E, 0x80];
+                        let mut diag_obj = mu_clone_self_obj.s_diag_obj.lock().unwrap();
+                        match diag_obj.send_diag(byte_vector) {
+                            Ok(()) => {
+                                //suppress reply bit, ignore receive diag data, receive doip ACK
+                                match diag_obj.receive_doip(1000) {
+                                    Ok(Some(_data)) => {}
+                                    Ok(None) => {}
+                                    Err(err) => {
+                                        eprintln!("Failed to receive doip Ack of tester-present: {}", err);
+                                    }
+                                };
+                            }
+                            Err(err) => {
+                                eprintln!("Failed to send diag tester-present: {}", err);
+                            }
+                        }
+                    }
+                } //drop-unlock mu_clone_self_obj and diag_obj here
+                thread::sleep(Duration::from_millis(interval));
+            }
+        });
+    }
+    else {
+        return Err(Error::new(ErrorKind::InvalidData, "tester-present is still running"));
+    }
+    Ok(())
+}
+
+pub fn stop_tester_present(&mut self) {
+    self.is_enable_tester_present.store(false, Ordering::Relaxed);
+}
+
 // Public function that returns a new Executor object
 pub fn create_executor(s_diag_obj: Arc<Mutex<transport::diag::Diag>>) -> Self {
-    Executor { s_diag_obj }
+    Executor { s_diag_obj, is_enable_tester_present: AtomicBool::new(false) }
 }
 
 }

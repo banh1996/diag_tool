@@ -31,8 +31,8 @@ const BUFFER_SIZE: usize = 4100; //default
  ****************************************************************************************************************/
 pub fn init() {
     let config = CONFIG.read().unwrap();
-    debug!("ethernet: {:?}", &config.ethernet.local_ipv4);
-    debug!("doip: {:?}", &config.doip);
+    debug!("ethernet config: {:?}", &config.ethernet.local_ipv4);
+    debug!("doip config: {:02X?}", &config.doip);
     G_IS_INIT_SOCKET.store(true, Ordering::Relaxed);
     // Check if tester role is client, then exit without doing any
     if &config.ethernet.role == "client" {
@@ -207,7 +207,7 @@ pub fn send_tcp(stream: &Arc<Mutex<TcpStream>>, p_data: Vec<u8>) -> Result<(), i
  *  brief      Function to receive tcp data to ECU
  *  details    -
  *  \param[in]  stream: TcpStream that used with mutex to prevent race condition when sending/reading data
- *              timeout: timeout(milliseconds) to wait for new doip data. If there's no data, return error
+ *              timeout: timeout(milliseconds) to wait for new tcp data. If there's no data, return error
  *  \param[out] -
  *  \precondition: Establish TCP connection successfully
  *  \reentrant:  FALSE

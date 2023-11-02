@@ -11,8 +11,6 @@ const doipversionIdToName = {
 
 
 const logBox = document.querySelector("#log-box");
-
-
 function updateResponse(response) {
     logBox.append( typeof response === 'string' ? response : JSON.stringify(response))
     logBox.append('\n');
@@ -71,6 +69,8 @@ function connect() {
             ecuaddr: ECUaddrInput.value,
             sgaaddr: SGAaddrInput.value,
             activationcode: activationInput.value,
+            testerpresentenable: testerpresentcheckbox.checked,
+            testerpresentinterval: TesterpresentIntervalInput.value,
         })
         .then(function(response) {
         isConnected = true;
@@ -114,8 +114,17 @@ fileconfigInput.addEventListener('change', function(event) {
         if (configData.doip.version == "0x2") {
             document.getElementById('doipversion').value = "ISO13400_2";
         }
+        document.getElementById('TesterpresentInterval-txt').value = configData.parameter.tester_present_interval;
+        document.getElementById('testerpresent-checkbox').checked = configData.parameter.tester_present;
+
+        window.__TAURI__.invoke('updateconfig', {
+            config: configData
+        })
     };
     reader.readAsText(file);
+
+    // Reset the value of the file input element
+    fileconfigInput.value = null;
 });
 
 //Handle SWDL events
@@ -148,6 +157,17 @@ sendSABtn.addEventListener('click', () => {
         .invoke('sendsecurityaccess', {
             level: SAlevelInput.value,
             key: SAkeyInput.value,
+        })
+        .then(updateResponse)
+        .catch(updateResponse)
+})
+
+//Handle Tester-Present events
+testerpresentcheckbox.addEventListener('change', function(event) {
+    window.__TAURI__
+        .invoke('triggertesterpresent', {
+            enable: testerpresentcheckbox.checked,
+            interval: TesterpresentIntervalInput.value,
         })
         .then(updateResponse)
         .catch(updateResponse)

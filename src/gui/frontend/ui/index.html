@@ -54,7 +54,7 @@
             <button id="filesequence-button">select sequence file</button>
             <button id="execute-btn">execute</button>
             <h3>Security-Access</h3>
-            <input id="SAlevel-txt" width="10px" placeholder="SA-level" />
+            <input id="SAlevel-txt" placeholder="SAlevel" />
             <input id="SAkey-txt" placeholder="input security-access key" />
             <button id="sendSA-btn">send</button>
 						<script>
@@ -105,16 +105,18 @@
             </div>
             <p>Enable Tester-Present</p>
             <input type="checkbox" id="testerpresent-checkbox" />
-            <input id="TesterpresentInterval-txt" placeholder="Interval-3s" />
+            <input id="TesterpresentInterval-txt" placeholder="Interval-2s" />
             <p>Import config file</p>
-            <input type="file" id="fileconfig-button" title="files"></input>
+            <input type="file" id="fileconfig-file" title="files"></input>
             <script>
               const vendorSelect = document.querySelector('#vendor');
               const doipversionSelect = document.querySelector('#doipversion');
               const SGAaddrInput = document.querySelector('#SGAaddr-txt');
               const ECUaddrInput = document.querySelector('#ECUaddr-txt');
               const TesteraddrInput = document.querySelector('#Testeraddr-txt');
-              const fileconfigInput = document.getElementById('fileconfig-button');
+              const fileconfigInput = document.getElementById('fileconfig-file');
+              const TesterpresentIntervalInput = document.querySelector('#TesterpresentInterval-txt');
+              const testerpresentcheckbox = document.getElementById('testerpresent-checkbox');
             </script>
 					</li>
 
