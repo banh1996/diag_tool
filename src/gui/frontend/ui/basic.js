@@ -9,18 +9,6 @@ const doipversionIdToName = {
     ISO13400_3: 'ISO13400_3',
 };
 
-var light = document.querySelector('.light');
-              
-const ipaddressInput = document.querySelector('#ipaddress-txt')
-const remoteportInput = document.querySelector('#remoteport-txt')
-var connectBtn = document.querySelector('#connect-btn');
-var isConnected = false;
-
-const sendudsBtn = document.querySelector('#senduds-btn')
-const diagInput = document.querySelector('#diag-cmd')
-const senddoipBtn = document.querySelector('#senddoip-btn')
-const doipInput = document.querySelector('#doip-cmd')
-const activationInput = document.querySelector('#activation-txt')
 
 const logBox = document.querySelector("#log-box");
 
@@ -31,6 +19,9 @@ function updateResponse(response) {
 }
 
 
+// Handle send diag events
+const sendudsBtn = document.querySelector('#senduds-btn')
+const diagInput = document.querySelector('#diag-cmd')
 sendudsBtn.addEventListener('click', () => {
 window.__TAURI__
     .invoke('senduds', {
@@ -40,6 +31,10 @@ window.__TAURI__
     .catch(updateResponse)
 })
 
+
+// Handle send doip events
+const senddoipBtn = document.querySelector('#senddoip-btn')
+const doipInput = document.querySelector('#doip-cmd')
 senddoipBtn.addEventListener('click', () => {
 window.__TAURI__
     .invoke('senddoip', {
@@ -50,8 +45,13 @@ window.__TAURI__
 })
 
 
-
-
+// Handle connect/disconnect ECU
+var light = document.querySelector('.light');      
+const ipaddressInput = document.querySelector('#ipaddress-txt')
+const remoteportInput = document.querySelector('#remoteport-txt')
+var connectBtn = document.querySelector('#connect-btn');
+var isConnected = false;
+const activationInput = document.querySelector('#activation-txt')
 connectBtn.addEventListener('click', function() {
     if (!isConnected) {
       connect();
@@ -59,8 +59,6 @@ connectBtn.addEventListener('click', function() {
       disconnect();
     }
 });
-
-
 function connect() {
     window.__TAURI__
         .invoke('connect', {
@@ -84,7 +82,6 @@ function connect() {
         console.log('Connection error:', error);
     });
 }
-  
 function disconnect() {
     window.__TAURI__
         .invoke('disconnect')
@@ -121,27 +118,37 @@ fileconfigInput.addEventListener('change', function(event) {
     reader.readAsText(file);
 });
 
-//Import SWDL file
+//Handle SWDL events
 flashBtn.addEventListener('click', () => {
     window.__TAURI__
         .invoke('flash')
         .then(updateResponse)
         .catch(updateResponse)
 })
-
 fileswdlInput.addEventListener('click', () => {
     window.__TAURI__
         .invoke('selectswdlfiles')
 })
 
+//Handle sequence events
 executeBtn.addEventListener('click', () => {
     window.__TAURI__
         .invoke('executesequence')
         .then(updateResponse)
         .catch(updateResponse)
 })
-
 filesequenceInput.addEventListener('click', () => {
     window.__TAURI__
         .invoke('selectsequencefile')
+})
+
+//Handle Security-Access events
+sendSABtn.addEventListener('click', () => {
+    window.__TAURI__
+        .invoke('sendsecurityaccess', {
+            level: SAlevelInput.value,
+            key: SAkeyInput.value,
+        })
+        .then(updateResponse)
+        .catch(updateResponse)
 })

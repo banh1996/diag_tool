@@ -247,7 +247,7 @@ async fn flash() -> Result<(), GUIError> {
 
     let paths =  SWDLPATHS.lock().unwrap();
     for path in paths.iter() {
-        println!("flashing {:?}", path);
+        debug!("flashing {:?}", path);
         let config = CONFIG.read().unwrap();
         let action_str = format!(r#"["path:{}", "format:vbf"]"#, path.display().to_string().replace("\\", "\\\\"));
         let result: Result<Value, serde_json::Error> = serde_json::from_str(action_str.as_str());
@@ -356,6 +356,51 @@ async fn selectsequencefile() {
     }
 }
 
+#[tauri::command]
+async fn sendsecurityaccess(level: String, key: String) -> Result<(), GUIError> {
+    lazy_static::lazy_static! {
+        static ref LOCK: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+    let _lock = match LOCK.try_lock() {
+        Ok(guard) => guard,
+        Err(_) => {
+            return Err(GUIError::Error);
+        }
+    };
+
+    let config = CONFIG.read().unwrap();
+    let name = format!("securityaccess_{:02}", level.parse::<u16>().unwrap());
+    let action_str: String = format!(r#"["algorithm:AES128", "iv:random", "encryption_authentication_key:{}", "proof_of_ownership_key:{}"]"#, key, key);
+    let result: Result<Value, serde_json::Error> = serde_json::from_str(action_str.as_str());
+    match result {
+        Ok(action_value) => {
+            let item = SequenceItem {
+                name: String::from(name),
+                description: String::from(format!("Send security-access level {}", level)),
+                action: action_value,
+                expect: Value::Array(vec![
+                    Value::String(String::from("*")),
+                ]),
+                timeout: String::from("5s"),
+                fail: String::from(""),
+            };
+            match Executor::execute_cmd(EXECUTOR_OBJ.clone(), item, &config.ethernet.vendor) {
+                Ok(()) => debug!("Command executed successfully!"),
+                Err(err) => {
+                    eprintln!("Error executing command: {}, STOP", err);
+                    return Err(GUIError::Error);
+                }
+            }
+        }
+        Err(e) => {
+            println!("Error parsing security-access action: {}", e);
+            return Err(GUIError::Error);
+        }
+    }
+
+    Ok(())
+}
+
 /* for testing
 use std::time::Duration;
 use std::thread;
@@ -394,7 +439,8 @@ pub fn run_gui() {
         selectswdlfiles,
         selectsequencefile,
         flash,
-        executesequence
+        executesequence,
+        sendsecurityaccess
     ])
     .build(tauri::generate_context!("src/gui/frontend/tauri.conf.json"))
     .expect("error while running tauri application")

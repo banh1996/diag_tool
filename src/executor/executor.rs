@@ -301,7 +301,7 @@ pub fn execute_cmd(this: Arc<Mutex<Executor>>, item: SequenceItem, vendor: &str)
                     }
                 }
                 else {
-                    return Err(Error::new(ErrorKind::InvalidInput, "Not support thí vendor"));
+                    return Err(Error::new(ErrorKind::InvalidInput, "Not support this vendor"));
                 }
             } else {
                 eprintln!("Invalid security name format: {}", s);

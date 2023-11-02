@@ -36,10 +36,10 @@
               <span style="float: right;">Activation code:</span>
             </div>
             <div style="display: inline-block;">
-              <input id="diag-cmd" placeholder="type message for diag" />
+              <input id="diag-cmd" placeholder="input message for diag" />
               <button id="senduds-btn">send uds</button>
               <button id="senddoip-btn">send doip</button>
-              <input id="doip-cmd" placeholder="type message for doip" />
+              <input id="doip-cmd" placeholder="input message for doip" />
               <div id="log-box" placeholder="view message log here"></div>
             </div>
             <div id="response"></div>
@@ -54,14 +54,17 @@
             <button id="filesequence-button">select sequence file</button>
             <button id="execute-btn">execute</button>
             <h3>Security-Access</h3>
-            <input id="SAlevel" width="30px" placeholder="SA-level" />
-            <input id="SAkey" placeholder="type security-access key" />
+            <input id="SAlevel-txt" width="10px" placeholder="SA-level" />
+            <input id="SAkey-txt" placeholder="input security-access key" />
             <button id="sendSA-btn">send</button>
 						<script>
               const fileswdlInput = document.querySelector('#fileswdl-button');
               const flashBtn = document.querySelector('#flash-btn')
               const executeBtn = document.querySelector('#execute-btn')
               const filesequenceInput = document.querySelector('#filesequence-button');
+              const SAlevelInput = document.querySelector('#SAlevel-txt')
+              const SAkeyInput = document.querySelector('#SAkey-txt')
+              const sendSABtn = document.querySelector('#sendSA-btn')
             </script>
 					</li>
 
